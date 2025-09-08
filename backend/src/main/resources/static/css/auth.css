@@ -1,0 +1,167 @@
+/* =========================
+   iOS-like Auth Theme
+   ========================= */
+:root{
+  --bg-1:#0f1020;
+  --text:#e9eef6;
+  --muted:#9fb0c6;
+  --surface:rgba(20,24,34,.82);
+  --border:rgba(255,255,255,.08);
+  --brand:#6a11cb;
+  --brand2:#2575fc;
+  --success:#34C759;
+  --danger:#FF3B30;
+  --focus:rgba(37,117,252,.38);
+  --radius:16px;
+  --shadow:0 20px 50px rgba(0,0,0,.45);
+}
+
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter","Noto Sans KR",system-ui,Arial,sans-serif;
+  background: var(--bg-1);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Background gradients (pick one per page) */
+.bg-grad-purple{
+  background:
+    radial-gradient(800px 800px at 10% 10%, rgba(106,17,203,.28), transparent 60%),
+    radial-gradient(700px 700px at 90% 80%, rgba(37,117,252,.28), transparent 55%),
+    linear-gradient(120deg,#0b0e23,#0a1330 30%,#08162b);
+}
+.bg-grad-peach{
+  background:
+    radial-gradient(900px 900px at 10% 20%, rgba(255,153,102,.25), transparent 60%),
+    radial-gradient(800px 800px at 85% 80%, rgba(229,193,197,.28), transparent 55%),
+    linear-gradient(120deg,#0b0e23,#23131b 30%,#2b1720);
+}
+
+/* Layout */
+.auth-page{
+  min-height:100dvh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+
+/* Card */
+.auth-card{
+  width:min(720px, 92vw);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:24px;
+  box-shadow:var(--shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Header area */
+.auth-head{
+  display:flex; align-items:center; gap:14px; margin-bottom:8px;
+}
+.brand-badge{
+  width:56px; height:56px; border-radius:50%;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  box-shadow:0 12px 26px rgba(37,117,252,.35);
+}
+.auth-title{font-weight:800; letter-spacing:.2px; margin:0}
+.auth-sub{color:var(--muted); margin:2px 0 0 0}
+
+/* Form */
+.form-label{font-weight:700; color:#d9e1ef}
+.form-control{
+  background: rgba(255,255,255,.06);
+  border:1px solid var(--border);
+  color:var(--text);
+  border-radius:12px;
+  padding:12px 14px;
+}
+.form-control::placeholder{color:var(--muted)}
+.form-control:focus{
+  background: rgba(255,255,255,.10);
+  border-color: transparent;
+  box-shadow:0 0 0 .25rem var(--focus);
+  color:var(--text);
+  outline:0;
+}
+
+/* Input wrapper for password toggle */
+.input-wrap{ position:relative }
+.toggle-eye{
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  background:transparent; border:0; color:var(--muted); outline:0; padding:6px;
+}
+.toggle-eye:focus{ color:#fff }
+
+/* Buttons (iOS tint style) */
+.btn-brand{
+  display:inline-flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  border:0; color:white; font-weight:800; letter-spacing:.2px;
+  padding:12px 16px; border-radius:12px; width:100%;
+  box-shadow:0 10px 24px rgba(37,117,252,.35);
+  transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
+}
+.btn-brand:hover{ filter:brightness(1.06) }
+.btn-brand:active{ transform: translateY(1px) }
+
+.btn-secondary-soft{
+  display:inline-flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.10);
+  border:1px solid var(--border); color:var(--text);
+  font-weight:800; padding:12px 16px; border-radius:12px; width:100%;
+}
+.btn-secondary-soft:hover{ background:rgba(255,255,255,.16) }
+
+/* Links */
+.helper a{ color:#cfe2ff; text-decoration:none }
+.helper a:hover{ text-decoration:underline }
+
+/* Footer line */
+.divider{ display:flex; align-items:center; color:var(--muted); font-size:.92rem; }
+.divider::before,.divider::after{
+  content:""; flex:1; height:1px; background: var(--border); margin:0 .75rem;
+}
+
+/* Small tweaks for Bootstrap spacing harmony */
+.mb-2{ margin-bottom:.5rem!important }
+.mb-3{ margin-bottom:1rem!important }
+.mt-3{ margin-top:1rem!important }
+/* Affix wrapper so the eye centers on the input, not the label */
+/* Labels shouldn’t overlap inputs */
+.form-label{ display:block; margin-bottom:.35rem; }
+
+/* Affix wrapper so the eye centers and doesn’t block clicks */
+.input-affix{ position:relative; }
+.input-affix .form-control{ padding-right:44px; } /* room for eye button */
+
+/* Keep the button on top, but only under its own area */
+.input-affix .toggle-eye{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  background:transparent;
+  border:0;
+  padding:6px;
+  line-height:1;
+  color:var(--muted);
+  z-index:2;
+  pointer-events:auto; /* ensure it can be clicked */
+}
+.input-affix .toggle-eye:focus{ color:#fff }
+
+/* Make sure no container above intercepts clicks */
+.auth-card, .auth-page { position:relative; }
+.was-validated .form-control:valid,
+.form-control.is-valid,
+.was-validated .form-control:valid:focus,
+.form-control.is-valid:focus{
+  border-color: var(--border) !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}

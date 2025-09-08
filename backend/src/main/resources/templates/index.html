@@ -1,0 +1,96 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Mental Health Support</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<main class="container three-column-layout">
+    <!-- Mood Tracker Section -->
+    <section class="section mood-tracker">
+        <h2>Mood Tracker</h2>
+        <div class="today-date" id="current-date"></div>
+
+        <div class="calendar-controls">
+            <button class="stylish-btn" id="prev-month" aria-label="Previous Month">◀</button>
+            <span id="current-month">March 2025</span>
+            <button class="stylish-btn" id="next-month" aria-label="Next Month">▶</button>
+        </div>
+
+        <div class="calendar-responsive-wrapper">
+            <div class="calendar">
+                <div class="calendar-weekdays">
+                    <span>Mon</span>
+                    <span>Tue</span>
+                    <span>Wed</span>
+                    <span>Thu</span>
+                    <span>Fri</span>
+                    <span>Sat</span>
+                    <span class="sunday">Sun</span>
+                </div>
+                <div id="calendar"></div>
+            </div>
+        </div>
+
+        <div id="emotion-buttons" class="emotion-buttons one-row">
+            <button class="mood-btn bad" onclick="showSubMoodButtons('bad')" aria-label="Bad Mood">😞 Bad</button>
+            <button class="mood-btn poor" onclick="showSubMoodButtons('poor')" aria-label="Poor Mood">😕 Poor</button>
+            <button class="mood-btn neutral" onclick="showSubMoodButtons('neutral')" aria-label="Neutral Mood">😐 Neutral</button>
+            <button class="mood-btn good" onclick="showSubMoodButtons('good')" aria-label="Good Mood">🙂 Good</button>
+            <button class="mood-btn best" onclick="showSubMoodButtons('best')" aria-label="Best Mood">😃 Best</button>
+        </div>
+
+        <div id="submood-buttons-container"></div>
+
+        <div class="note">
+            <a href="/statistics.html" class="stylish-btn">📊 View Mood Statistics</a>
+        </div>
+    </section>
+
+    <!-- Journaling Section -->
+    <section class="section journaling">
+        <h2>Journaling</h2>
+        <form id="new-note-form">
+            <label for="note-content">Note Content:</label>
+            <textarea id="note-content" name="content" required placeholder="Write your note here..."></textarea>
+
+            <label for="note-date">Date:</label>
+            <input type="date" id="note-date" name="date" required>
+
+            <button type="submit">Save Note</button>
+        </form>
+
+        <div class="note">
+            <a href="/notes.html">View all notes</a>
+        </div>
+    </section>
+
+    <!-- Chat Box Section -->
+    <section class="section chat-section">
+        <h2>Mind Chat Bot</h2>
+        <div class="chat-greeting">👋 Welcome! Start chatting with your AI friend.</div>
+
+        <div class="chat-box" id="chat-box">
+            <div class="messages" id="messages"></div>
+
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+                <button id="send-btn" type="button">Send</button>
+            </div>
+
+            <div class="chat-actions">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="stylish-btn">Logout</button>
+                </form>
+                <a href="/home.html" class="stylish-btn">My Profile</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>

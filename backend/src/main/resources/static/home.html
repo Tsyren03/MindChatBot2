@@ -1,0 +1,61 @@
+<!-- home.html (My Profile, dark iOS style) -->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>My Profile - MindChatBot</title>
+
+    <!-- App styles (your main dark theme) -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css" />
+    <!-- Auth theme utilities (gradients + iOS buttons) -->
+    <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css" />
+
+    <style>
+        .page-center{min-height:100dvh;display:grid;place-items:center;padding:clamp(12px,3vw,32px)}
+        .section.narrow{max-width:640px;width:100%}
+        .row{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+        .kv{font-size:16px;margin:6px 0}
+        .kv b{display:inline-block;min-width:90px}
+        .muted{ color:var(--ios-subtext) }
+        .actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+    </style>
+</head>
+<body class="bg-grad-purple">
+<main class="page-center">
+    <section class="section narrow">
+        <h2 style="text-align:center">Profile Information</h2>
+
+        <div class="row">
+            <div>
+                <p class="kv"><b>Name:</b> <span id="profile-name" class="muted">Loading…</span></p>
+                <p class="kv"><b>Email:</b> <span id="profile-email" class="muted">Loading…</span></p>
+                <p class="kv"><b>Joined:</b> <span id="profile-joined" class="muted">Loading…</span></p>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a th:href="@{/}" href="/index.html" class="stylish-btn" data-variant="gray">← Main</a>
+            <a th:href="@{/notes}" href="/notes.html" class="stylish-btn" data-variant="success">All Notes</a>
+        </div>
+    </section>
+</main>
+
+<script>
+    window.addEventListener('DOMContentLoaded', function() {
+      fetch('/user/profile')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(p => {
+          document.getElementById('profile-name').textContent = p.name || p.email || 'Unknown';
+          document.getElementById('profile-email').textContent = p.email || '-';
+          document.getElementById('profile-joined').textContent = p.joined || '-';
+        })
+        .catch(() => {
+          document.getElementById('profile-name').textContent = '로그인이 필요합니다';
+          document.getElementById('profile-email').textContent = '-';
+          document.getElementById('profile-joined').textContent = '-';
+        });
+    });
+</script>
+</body>
+</html>
