@@ -9,14 +9,14 @@
   --ios-text:#e9eef6;
   --ios-subtext:#9fb0c6;
 
-  /* Tints */
-  --ios-blue:#0A84FF;
-  --ios-green:#34C759;
-  --ios-red:#FF3B30;
-  --ios-gray:#a1acc5;
-  --ios-blue-hover:#2F8DFF;
-  --ios-green-pressed:#2FB14F;
-  --ios-red-pressed:#E13228;
+  /* Tints — updated button colors */
+  --ios-blue:#5E5CE6;              /* primary */
+  --ios-green:#30D158;             /* success */
+  --ios-red:#FF453A;               /* danger */
+  --ios-gray:#8E8E93;              /* neutral */
+  --ios-blue-hover:#6B68F0;        /* primary hover */
+  --ios-green-pressed:#2AC14F;     /* success pressed */
+  --ios-red-pressed:#E63B31;       /* danger pressed */
 
   /* Focus */
   --focus:rgba(37,117,252,.28);

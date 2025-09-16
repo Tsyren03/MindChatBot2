@@ -1,5 +1,40 @@
-/* ===== STRICT per-user chat history (5 exchanges = 10 messages) ===== */
+/* ======================================================================
+   MindChatBot – main client script (calendar, chat, notes)  (MOBILE-READY)
+   - Mobile tab navigation (Mood / Journal / Chat) if #mobile-tabs exists
+   - Desktop three-column layout on large screens
+   - No double chat replies when saving notes
+   - i18n-aware UI messages via window.I18N + ?lang= + <html lang="">
+   ====================================================================== */
 
+/* ===== Mood palettes ===== */
+const CATEGORY_BASE = { bad:'#FF3B30', poor:'#FF9F0A', neutral:'#D1D5DB', good:'#34C759', best:'#0A84FF' };
+const MOOD_COLOR_MAP = {
+  best:{ proud:'#00E6D0', grateful:'#00B8FF', energetic:'#4D7CFE', excited:'#A259FF', fulfilled:'#FF66C4' },
+  good:{ calm:'#6EE7B7', productive:'#34D399', hopeful:'#10B981', motivated:'#22C55E', friendly:'#A3E635' },
+  neutral:{ indifferent:'#E5E7EB', blank:'#D1D5DB', tired:'#BFC5CD', bored:'#9AA3AE', quiet:'#6B7280' },
+  poor:{ frustrated:'#FFE08A', overwhelmed:'#FFD166', nervous:'#FFB020', insecure:'#FF9F0A', confused:'#FF7A00' },
+  bad:{ angry:'#FF6B6B', sad:'#FF3B30', lonely:'#E11D48', anxious:'#C81E1E', hopeless:'#8B0000' }
+};
+const MOOD_MAP = {
+  best:["proud","grateful","energetic","excited","fulfilled"],
+  good:["calm","productive","hopeful","motivated","friendly"],
+  neutral:["indifferent","blank","tired","bored","quiet"],
+  poor:["frustrated","overwhelmed","nervous","insecure","confused"],
+  bad:["angry","sad","lonely","anxious","hopeless"]
+};
+
+/* ===== i18n helper ===== */
+function t(key, fallback){
+  return (window.I18N && typeof window.I18N[key] === 'string') ? window.I18N[key] : fallback;
+}
+function currentLocale(){
+  const urlLang = new URLSearchParams(location.search).get('lang');
+  return (urlLang || document.documentElement.lang || navigator.language || 'en').toLowerCase();
+}
+function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+function subMoodLabel(code){ return t(`mood.sub.${code}`, capitalize(code)); }
+
+/* ===== Per-user chat history ===== */
 const CHAT_NS = "chatMessages_v4_";
 let IDENTITY = { key: `guest:${getDeviceId()}`, email: null, uid: null, token: null };
 
@@ -11,7 +46,6 @@ function getDeviceId() {
   }
   return id;
 }
-
 function tryDecodeJwtPayload(token) {
   try {
     const base64 = token.split(".")[1];
@@ -19,16 +53,11 @@ function tryDecodeJwtPayload(token) {
     return JSON.parse(decodeURIComponent(escape(json)));
   } catch { return null; }
 }
-
 function setIdentity(nextKey, email=null, uid=null, token=null) {
   const prevKey = IDENTITY.key;
   IDENTITY = { key: nextKey, email, uid, token };
-  if (prevKey !== nextKey) {
-    // Swap UI to this user's last 5 exchanges right away
-    loadLastChatMessages(true);
-  }
+  if (prevKey !== nextKey) loadLastChatMessages(true);
 }
-
 async function refreshIdentityFromProfile() {
   try {
     const r = await fetch("/user/profile", {
@@ -39,43 +68,30 @@ async function refreshIdentityFromProfile() {
     });
     if (r.ok) {
       const p = await r.json();
-      // Prefer DB id if you have it; else email/username
       const uniq = (p.id || p.email || p.username || "").toString().toLowerCase().trim();
-      if (uniq) {
-        setIdentity(`user:${uniq}`, p.email ?? null, p.id ?? null, localStorage.getItem("authToken") || null);
-        return true;
-      }
+      if (uniq) { setIdentity(`user:${uniq}`, p.email ?? null, p.id ?? null, localStorage.getItem("authToken") || null); return true; }
     }
   } catch {}
   return false;
 }
-
 function refreshIdentityFromToken() {
   const token = localStorage.getItem("authToken");
   if (!token) return false;
   const payload = tryDecodeJwtPayload(token);
   const uniq = (payload?.sub || payload?.email || payload?.userId || payload?.username || "")
     .toString().toLowerCase().trim();
-  if (uniq) {
-    setIdentity(`user:${uniq}`, payload?.email ?? null, payload?.userId ?? null, token);
-    return true;
-  }
+  if (uniq) { setIdentity(`user:${uniq}`, payload?.email ?? null, payload?.userId ?? null, token); return true; }
   return false;
 }
-
 async function initIdentity() {
-  // 1) Prefer session /user/profile (form login paths)
   if (await refreshIdentityFromProfile()) return;
-  // 2) Fallback to JWT if you use token auth
   if (refreshIdentityFromToken()) return;
-  // 3) Guest per device
   setIdentity(`guest:${getDeviceId()}`, null, null, localStorage.getItem("authToken") || null);
 }
-
 function storageKey() { return CHAT_NS + IDENTITY.key; }
 function getUserIdFromToken() { return { userId: IDENTITY.key, token: IDENTITY.token }; }
 
-/* ===== Contrast helpers (unchanged) ===== */
+/* ===== Contrast + coloring ===== */
 function getReadableTextColor(hex){
   if(!hex) return '#111';
   let h = hex.replace('#','');
@@ -102,43 +118,258 @@ function applyDayColor(el, color, mainMood, subMood){
   el.title = (mainMood || '') + (subMood ? (': ' + subMood) : '');
 }
 
+/* ===== Dedupe guards to avoid double requests/replies ===== */
+let __noteSubmitBusy = false;
+let __moodSaveBusy  = false;
+let __lastMoodSig   = ""; // "YYYY-M-D:main/sub"
+
+/* ===== One-reply popup (reply happens ONLY after mood save) ===== */
+function showRecognizedMoodPopup(moodObj) {
+  document.getElementById("recognized-mood-popup")?.remove();
+
+  const popup = document.createElement("div");
+  popup.id = "recognized-mood-popup";
+  Object.assign(popup.style, {
+    position:"fixed", inset:"0", background:"rgba(0,0,0,.35)",
+    display:"flex", alignItems:"center", justifyContent:"center", zIndex:"9999"
+  });
+
+  const box = document.createElement("div");
+  Object.assign(box.style, {
+    background:"#fff", color:"#111", padding:"24px 20px",
+    borderRadius:"16px", border:"1px solid #E5E5EA",
+    boxShadow:"0 4px 24px rgba(0,0,0,.18)", textAlign:"center",
+    maxWidth:"420px", width:"92%"
+  });
+
+  const dateStr = `${moodObj.year}-${String(moodObj.month).padStart(2,'0')}-${String(moodObj.day).padStart(2,'0')}`;
+  box.innerHTML = `
+    <h3 style="margin:0 0 10px 0;font-weight:800;">${t('popup_title','AI Mood Suggestion')}</h3>
+    <div style="font-size:16px;margin-bottom:8px;">${t('popup_for','AI recognized your mood for')} <b>${dateStr}</b>:</div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:14px;">${moodObj.main} / ${moodObj.sub}</div>
+    <div style="margin-bottom:16px;color:#3A3A3C">${t('mood_popup_confirm','Save this?')}</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="accept-mood-btn" class="stylish-btn" style="padding:10px 18px;border-radius:12px;">${t('popup_save','Save')}</button>
+      <button id="decline-mood-btn" class="stylish-btn" data-variant="gray" style="padding:10px 18px;border-radius:12px;">${t('popup_cancel','Cancel')}</button>
+    </div>
+  `;
+  popup.appendChild(box);
+  document.body.appendChild(popup);
+
+  const acceptBtn = document.getElementById("accept-mood-btn");
+  document.getElementById("decline-mood-btn").onclick = () => popup.remove();
+
+  acceptBtn.onclick = async () => {
+    if (__moodSaveBusy) return;
+    __moodSaveBusy = true;
+    acceptBtn.disabled = true;
+
+    const payload = {
+      year:  moodObj.year,
+      month: moodObj.month,
+      day:   moodObj.day,
+      emoji: moodObj.main,
+      subMood: moodObj.sub
+    };
+
+    const sig = `${payload.year}-${payload.month}-${payload.day}:${payload.emoji}/${payload.subMood}`;
+    if (sig === __lastMoodSig) {
+      __moodSaveBusy = false;
+      acceptBtn.disabled = false;
+      popup.remove();
+      return;
+    }
+
+    const { token } = getUserIdFromToken();
+    let res;
+    try {
+      res = await fetch('/user/moods/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token && { "Authorization": `Bearer ${token}` }) },
+        body: JSON.stringify(payload),
+        credentials: 'same-origin'
+      });
+    } catch (e) {
+      console.error("Network error saving mood:", e);
+      alert(t('network_note','An error occurred while saving the note.'));
+      __moodSaveBusy = false;
+      acceptBtn.disabled = false;
+      return;
+    }
+
+    if (!res.ok) {
+      const tx = await res.text().catch(()=> '');
+      console.error("Save mood failed", res.status, tx);
+      alert(`Failed to save mood: ${res.status}`);
+      __moodSaveBusy = false;
+      acceptBtn.disabled = false;
+      return;
+    }
+
+    __lastMoodSig = sig;
+
+    const data = await res.json().catch(()=> ({}));
+
+    // paint calendar if current month
+    try {
+      const curYear  = parseInt(document.getElementById("current-month")?.dataset.year, 10);
+      const curMonth = parseInt(document.getElementById("current-month")?.dataset.month, 10); // 0-based
+      if (curYear === payload.year && (curMonth + 1) === payload.month) {
+        document.querySelectorAll("#calendar .calendar-day").forEach(el => {
+          if (parseInt(el.dataset.day, 10) === payload.day) {
+            const clr = (MOOD_COLOR_MAP[payload.emoji]?.[payload.subMood]) ?? CATEGORY_BASE[payload.emoji] ?? '';
+            applyDayColor(el, clr, payload.emoji, payload.subMood);
+          }
+        });
+      }
+    } catch {}
+
+    // EXACTLY ONE bot reply (from mood save)
+    if (data && typeof data.reply === "string" && data.reply.trim()) {
+      await addBotMessageTyping(data.reply.trim());
+    } else {
+      await addBotMessageTyping(t('mood_saved','Your mood has been saved.'));
+    }
+
+    __moodSaveBusy = false;
+    popup.remove();
+  };
+}
+
 /* ===== App boot ===== */
 document.addEventListener("DOMContentLoaded", async function () {
-  // Resolve identity BEFORE touching chat history
   await initIdentity();
 
-  // Inputs
+  const locale = currentLocale();
+
+  /* ——— Localize weekday header (Mon-first) ——— */
+  renderWeekdayHeader(locale);
+
+  /* ——— Mobile tab navigation (if present) ——— */
+  const tabsBar = document.getElementById("mobile-tabs");
+  const sections = {
+    mood: document.getElementById("mood-tracker"),
+    journal: document.getElementById("journaling"),
+    chat: document.getElementById("chat-section"),
+  };
+  const mq = window.matchMedia("(max-width: 860px)");
+
+  function setActiveTab(name) {
+    if (!sections[name]) return;
+    Object.keys(sections).forEach(k => {
+      sections[k].classList.toggle("hidden", k !== name && mq.matches);
+    });
+    document.querySelectorAll(".mobile-tab").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === name);
+      btn.setAttribute('aria-selected', btn.dataset.tab === name ? 'true' : 'false');
+    });
+    if (mq.matches) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  tabsBar?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".mobile-tab");
+    if (!btn) return;
+    setActiveTab(btn.dataset.tab);
+    history.replaceState(null, "", `#${btn.dataset.tab}`);
+  });
+
+  function handleLayoutChange() {
+    const hash = (location.hash || "").replace("#", "");
+    const initial = (hash === "chat" || hash === "journal" || hash === "mood") ? hash : "mood";
+    if (mq.matches) {
+      tabsBar?.classList.remove("hidden");
+      setActiveTab(initial);
+    } else {
+      tabsBar?.classList.add("hidden");
+      Object.values(sections).forEach(s => s?.classList.remove("hidden"));
+    }
+  }
+  mq.addEventListener?.("change", handleLayoutChange);
+  handleLayoutChange();
+
+  /* ——— Inputs / chat ——— */
   document.getElementById("user-input")?.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
   document.getElementById("send-btn")?.addEventListener("click", sendMessage);
 
-  // === Note form (unchanged) ===
+  /* === Note Form (guarded) === */
   const form = document.getElementById("new-note-form");
   if (form) {
-    form.addEventListener("submit", async function (event) {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const content = document.getElementById("note-content").value;
-      const date = document.getElementById("note-date").value;
+      if (__noteSubmitBusy) return;
+      __noteSubmitBusy = true;
+
+      const contentEl = document.getElementById("note-content");
+      const dateEl = document.getElementById("note-date");
+      const content = (contentEl?.value || "").trim();
+      if (!content) { alert(t('write_something','Please write something first.')); __noteSubmitBusy = false; return; }
+
+      // ensure date
+      let date = (dateEl?.value || "").trim();
+      if (!date) {
+        date = new Date().toISOString().slice(0, 10);
+        if (dateEl) dateEl.value = date;
+      }
+
       const { token } = getUserIdFromToken();
+
       try {
-        const response = await fetch("/user/notes", {
+        const res = await fetch("/user/notes", {
           method: "POST",
-          headers: { "Content-Type": "application/json", ...(token && { "Authorization": `Bearer ${token}` }) },
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            ...(token && { "Authorization": `Bearer ${token}` })
+          },
           body: JSON.stringify({ content, date })
         });
-        if (response.ok) {
-          const replyData = await response.json();
-          form.reset();
-          if (replyData.mood && replyData.mood.main && replyData.mood.sub && replyData.mood.year && replyData.mood.month && replyData.mood.day) {
-            showRecognizedMoodPopup(replyData.mood);
+
+        const bodyText = await res.text();
+
+        if (!res.ok) {
+          console.error("Save note failed:", res.status, bodyText);
+          alert(res.status === 401 || res.status === 403 ? t('login_required','Please log in to save notes.') : t('failed_save_note','Failed to save note.'));
+          __noteSubmitBusy = false;
+          return;
+        }
+
+        const ct = (res.headers.get("content-type") || "").toLowerCase();
+        let data;
+        if (ct.includes("application/json")) {
+          data = JSON.parse(bodyText || "{}");
+        } else {
+          try { data = JSON.parse(bodyText || "{}"); }
+          catch {
+            console.error("Expected JSON but got:", bodyText.slice(0, 500));
+            alert(t('unexpected_server','Server returned an unexpected response while saving the note.'));
+            __noteSubmitBusy = false;
+            return;
           }
-        } else { alert("Failed to save note."); }
-      } catch (error) { console.error("Error:", error); alert("An error occurred while saving the note."); }
+        }
+
+        form.reset();
+
+        // No bot reply here; we reply after mood save only.
+        if (data.mood &&
+            data.mood.main && data.mood.sub &&
+            data.mood.year && data.mood.month && data.mood.day) {
+          showRecognizedMoodPopup(data.mood);
+        } else {
+          await addBotMessageTyping(t('note_saved','Note saved.'));
+        }
+      } catch (e) {
+        console.error("Network/parse error saving note:", e);
+        alert(t('network_note','An error occurred while saving the note.'));
+      } finally {
+        __noteSubmitBusy = false;
+      }
     });
   }
 
-  // === Calendar (unchanged except using getUserIdFromToken for auth) ===
+  /* === Calendar === */
   const calendar = document.getElementById("calendar");
   const currentDateElement = document.getElementById("current-date");
   const prevMonthButton = document.getElementById("prev-month");
@@ -163,22 +394,23 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   async function updateCalendar() {
-    calendar.innerHTML = "";
-    currentMonthElement.textContent = new Date(currentYear, currentMonth).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const locale = currentLocale();
+    // header (localized)
+    currentMonthElement.textContent = new Date(currentYear, currentMonth).toLocaleString(locale, { month: 'long', year: 'numeric' });
     currentMonthElement.dataset.year = currentYear;
     currentMonthElement.dataset.month = currentMonth;
 
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-    const startDay = (firstDayOfMonth.getDay() + 6) % 7;
+    const startDay = (firstDayOfMonth.getDay() + 6) % 7; // Monday-first
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const savedMoods = await fetchMoods(currentYear, currentMonth);
 
+    const nodes = [];
     for (let i = 0; i < startDay; i++) {
       const emptyCell = document.createElement("div");
       emptyCell.classList.add("calendar-day", "empty");
-      calendar.appendChild(emptyCell);
+      nodes.push(emptyCell);
     }
-
     for (let day = 1; day <= daysInMonth; day++) {
       const dayElement = document.createElement("div");
       dayElement.classList.add("calendar-day");
@@ -197,23 +429,38 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
 
       dayElement.addEventListener("click", () => { selectDay(dayElement); clearSubMoodUI(); });
-      calendar.appendChild(dayElement);
+      nodes.push(dayElement);
     }
+
+    calendar.replaceChildren(...nodes);
   }
 
-  prevMonthButton?.addEventListener("click", () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } updateCalendar(); clearSubMoodUI(); });
-  nextMonthButton?.addEventListener("click", () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } updateCalendar(); clearSubMoodUI(); });
+  // Localize “Today: …”
+  if (currentDateElement) {
+    const locale = currentLocale();
+    const todayStr = new Date().toLocaleDateString(locale, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    currentDateElement.textContent = `${t('mood.today','Today:')} ${todayStr}`;
+  }
 
-  currentDateElement && (currentDateElement.textContent = `Today: ${new Date().toDateString()}`);
-  updateCalendar();
+  prevMonthButton?.addEventListener("click", () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    updateCalendar(); clearSubMoodUI();
+  });
+  nextMonthButton?.addEventListener("click", () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    updateCalendar(); clearSubMoodUI();
+  });
 
-  // Load this identity's history
+  await updateCalendar();
+
+  // per-identity history
   loadLastChatMessages(true);
 
-  // Detect account switches quickly
+  // detect account switches
   window.addEventListener("focus", () => { refreshIdentityFromProfile(); });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshIdentityFromProfile(); });
-  // Watch JWT changes too
   let __lastToken = localStorage.getItem("authToken") || null;
   setInterval(() => {
     const now = localStorage.getItem("authToken") || null;
@@ -224,7 +471,31 @@ document.addEventListener("DOMContentLoaded", async function () {
   }, 800);
 });
 
-/* ===== Typing indicator + typewriter (unchanged) ===== */
+/* ===== Localize weekday header (Mon-first) ===== */
+function renderWeekdayHeader(locale){
+  const container = document.querySelector(".calendar-weekdays");
+  if (!container) return;
+  // Build Monday-first labels using Intl
+  const base = new Date(Date.UTC(2024, 0, 1)); // arbitrary Monday reference week
+  // Find Monday (getUTCDay(): 0=Sun..6=Sat)
+  const monday = new Date(base);
+  const d = monday.getUTCDay();
+  const offsetToMonday = ((1 - d) + 7) % 7;
+  monday.setUTCDate(monday.getUTCDate() + offsetToMonday);
+
+  const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+  const labels = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(monday);
+    day.setUTCDate(monday.getUTCDate() + i);
+    labels.push(fmt.format(day));
+  }
+  container.innerHTML = labels
+    .map((lab, idx) => `<span${idx===6?' class="sunday"':''}>${lab}</span>`)
+    .join('');
+}
+
+/* ===== Typing indicator + typewriter ===== */
 const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 function createTypingIndicator(){
   const messagesDiv = document.getElementById("messages");
@@ -248,7 +519,7 @@ async function typewriter(targetEl, text, { min=16, max=28 } = {}){
   }
 }
 
-/* ===== Chat persistence (per-identity) ===== */
+/* ===== Chat persistence ===== */
 async function addBotMessageTyping(text){
   const typing = createTypingIndicator();
   const think = Math.min(900, 200 + Math.floor(text.length * 4));
@@ -262,9 +533,8 @@ async function addBotMessageTyping(text){
   const key = storageKey();
   const messages = JSON.parse(localStorage.getItem(key) || "[]");
   messages.push({ sender:"bot", text, t: Date.now() });
-  localStorage.setItem(key, JSON.stringify(messages.slice(-10))); // keep 5 exchanges
+  localStorage.setItem(key, JSON.stringify(messages.slice(-10)));
 }
-
 function addMessage(sender, text) {
   const messagesDiv = document.getElementById("messages");
   const messageElement = document.createElement("div");
@@ -278,7 +548,6 @@ function addMessage(sender, text) {
   messages.push({ sender, text, t: Date.now() });
   localStorage.setItem(key, JSON.stringify(messages.slice(-10)));
 }
-
 function loadLastChatMessages(forceClear = false) {
   const messagesDiv = document.getElementById("messages");
   if (!messagesDiv) return;
@@ -286,7 +555,6 @@ function loadLastChatMessages(forceClear = false) {
 
   const key = storageKey();
   const messages = JSON.parse(localStorage.getItem(key) || "[]").slice(-10);
-  messagesDiv.innerHTML = "";
   messages.forEach(msg => {
     const el = document.createElement("div");
     el.classList.add("message", msg.sender);
@@ -296,7 +564,7 @@ function loadLastChatMessages(forceClear = false) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-/* ===== Calendar helpers (unchanged) ===== */
+/* ===== Calendar helpers ===== */
 function selectDay(dayElement) {
   document.querySelectorAll(".calendar-day").forEach(el => el.classList.remove("selected"));
   dayElement.classList.add("selected");
@@ -312,23 +580,7 @@ function selectDay(dayElement) {
   }
 }
 
-/* Palettes (unchanged) */
-const CATEGORY_BASE = { bad:'#FF3B30', poor:'#FF9F0A', neutral:'#D1D5DB', good:'#34C759', best:'#0A84FF' };
-const MOOD_COLOR_MAP = {
-  best:{ proud:'#00E6D0', grateful:'#00B8FF', energetic:'#4D7CFE', excited:'#A259FF', fulfilled:'#FF66C4' },
-  good:{ calm:'#6EE7B7', productive:'#34D399', hopeful:'#10B981', motivated:'#22C55E', friendly:'#A3E635' },
-  neutral:{ indifferent:'#E5E7EB', blank:'#D1D5DB', tired:'#BFC5CD', bored:'#9AA3AE', quiet:'#6B7280' },
-  poor:{ frustrated:'#FFE08A', overwhelmed:'#FFD166', nervous:'#FFB020', insecure:'#FF9F0A', confused:'#FF7A00' },
-  bad:{ angry:'#FF6B6B', sad:'#FF3B30', lonely:'#E11D48', anxious:'#C81E1E', hopeless:'#8B0000' }
-};
-const MOOD_MAP = {
-  best:["proud","grateful","energetic","excited","fulfilled"],
-  good:["calm","productive","hopeful","motivated","friendly"],
-  neutral:["indifferent","blank","tired","bored","quiet"],
-  poor:["frustrated","overwhelmed","nervous","insecure","confused"],
-  bad:["angry","sad","lonely","anxious","hopeless"]
-};
-
+/* ===== Manual submood path (localized labels) ===== */
 window.showSubMoodButtons = function(mainMood) {
   const container = document.getElementById("submood-buttons-container");
   if (!container) return;
@@ -338,7 +590,7 @@ window.showSubMoodButtons = function(mainMood) {
   submoods.forEach((subMood) => {
     const btn = document.createElement('button');
     btn.className = 'submood-btn';
-    btn.textContent = subMood.charAt(0).toUpperCase() + subMood.slice(1);
+    btn.textContent = subMoodLabel(subMood);   // localized label
     const chip = document.createElement('span');
     chip.style.cssText='display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:8px';
     chip.style.background = colors[subMood] || '#e5e7eb';
@@ -351,7 +603,7 @@ window.showSubMoodButtons = function(mainMood) {
 
 async function saveMoodWithSubMoodLive(emoji, subMood) {
   const selectedDayElement = document.querySelector(".calendar-day.selected");
-  if (!selectedDayElement) { alert("Please select a date first."); return; }
+  if (!selectedDayElement) { alert(t('select_date_first','Please select a date first.')); return; }
 
   const { token } = getUserIdFromToken();
   const day = parseInt(selectedDayElement.dataset.day, 10);
@@ -359,6 +611,12 @@ async function saveMoodWithSubMoodLive(emoji, subMood) {
   const month = parseInt(document.getElementById("current-month").dataset.month, 10);
   const mood = { year, month: month + 1, day, emoji, subMood };
 
+  // dedupe manual saves too
+  const sig = `${mood.year}-${mood.month}-${mood.day}:${mood.emoji}/${mood.subMood}`;
+  if (sig === __lastMoodSig) return;
+  __lastMoodSig = sig;
+
+  // instant paint
   let color = MOOD_COLOR_MAP[emoji]?.[subMood] ?? CATEGORY_BASE[emoji] ?? '';
   applyDayColor(selectedDayElement, color, emoji, subMood);
 
@@ -369,20 +627,20 @@ async function saveMoodWithSubMoodLive(emoji, subMood) {
       headers: { 'Content-Type': 'application/json', ...(token && { "Authorization": `Bearer ${token}` }) },
       body: JSON.stringify(mood)
     });
-  } catch (e) { console.error("Network error", e); alert("Network error while saving mood."); return; }
+  } catch (e) { console.error("Network error", e); alert(t('network_note','An error occurred while saving the note.')); return; }
 
   if (!res.ok) {
     const text = await res.text();
     console.error("Save failed", res.status, text);
-    alert(`Failed to save mood: ${res.status} ${text}`);
+    alert(t('failed_save_mood','Failed to save mood.'));
     return;
   }
 
-  const replyData = await res.json();
-  await addBotMessageTyping(replyData.reply || "Your mood has been saved.");
+  const replyData = await res.json().catch(()=> ({}));
+  await addBotMessageTyping(replyData.reply || t('mood_saved','Your mood has been saved.'));
 }
 
-/* Send message (passes stable per-user id to server too) */
+/* ===== Chat send ===== */
 async function sendMessage() {
   const input = document.getElementById("user-input");
   const message = input.value.trim();
@@ -390,19 +648,17 @@ async function sendMessage() {
   addMessage("user", message);
   input.value = "";
 
-  const { userId, token } = getUserIdFromToken(); // userId === IDENTITY.key (e.g., user:email or guest:device)
+  const { userId, token } = getUserIdFromToken();
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(token && { "Authorization": `Bearer ${token}` }) },
       body: JSON.stringify({ message, userId })
     });
-    const data = await response.json();
+    const data = await response.json().catch(()=> ({}));
     await addBotMessageTyping(data.response || ("⚠️ " + (data.error || "Unknown server response.")));
   } catch (err) {
     console.error("send error", err);
-    await addBotMessageTyping("⚠️ Server error occurred.");
+    await addBotMessageTyping(t('server_error','⚠️ Server error occurred.'));
   }
 }
-
-/* ===== END ===== */

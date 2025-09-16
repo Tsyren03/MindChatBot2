@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html th:lang="${#locale}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title th:text="#{notes.title}">All Notes</title>
+  <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css" />
+  <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css" />
+  <style>
+    .page-center{min-height:100dvh;display:grid;place-items:center;padding:clamp(12px,3vw,32px)}
+    .section.narrow{max-width:900px;width:100%}
+    #notes-list .note{padding:12px;border:1px solid var(--ios-separator);border-radius:12px;background:var(--ios-card);color:var(--ios-text);margin-bottom:10px;}
+    .muted{ color:var(--ios-subtext) }
+    .lang-switch{position:sticky;top:0;z-index:60;display:flex;gap:8px;justify-content:flex-end;padding:10px}
+    .lang-switch button{background:#1c2230;color:#fff;border:1px solid var(--ios-separator);border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer}
+    .lang-switch button.active{background:var(--ios-blue)}
+  </style>
+</head>
+<body class="bg-grad-peach" th:with="L=${#lists.isEmpty(param.lang) ? #locale.language : param.lang[0]}">
+
+<nav class="lang-switch" role="navigation" aria-label="Language">
+  <button id="lang-en" onclick="switchLang('en')">EN</button>
+  <button id="lang-ko" onclick="switchLang('ko')">한국어</button>
+  <button id="lang-ru" onclick="switchLang('ru')">RU</button>
+</nav>
+
+<main class="page-center">
+  <section class="section narrow">
+    <h2 style="text-align:center" th:text="#{notes.title}">All Notes</h2>
+    <div id="notes-list"></div>
+    <div style="margin-top:12px;text-align:center">
+      <a class="stylish-btn" data-variant="gray"
+         th:href="@{/index(lang=${L})}" href="/index">← <span th:text="#{nav.backMain}">Back to Main</span></a>
+    </div>
+  </section>
+</main>
+
+<script th:inline="javascript">
+  const CUR_LANG=(new URLSearchParams(location.search).get('lang'))||/*[[${L}]]*/'en';
+  function switchLang(lang){const u=new URL(location.href);u.searchParams.set('lang',lang);location.href=u.toString();}
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById('lang-'+CUR_LANG)?.classList.add('active');
+
+    // keep lang on links (if any new are added dynamically)
+    document.querySelectorAll('a[href^="/"],a[href^="./"],a[href^="../"]').forEach(a=>{
+      try{const u=new URL(a.href,location.origin);if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}}catch{}
+    });
+
+    const notesList = document.getElementById("notes-list");
+    if (!notesList) return;
+    const qs = new URLSearchParams(window.location.search);
+    const noteDate = qs.get('date');
+
+    function t(k, d){ return (window.I18N && I18N[k]) || d; }
+
+    function renderNotes(arr){
+      if (!arr || arr.length === 0){
+        notesList.innerHTML = "<p class='muted'>" + (t('notes.empty','No notes available.')) + "</p>";
+        return;
+      }
+      notesList.innerHTML = "";
+      arr.forEach(note=>{
+        const formattedDate = new Date(note.date).toLocaleDateString(CUR_LANG, {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+        const noteDiv = document.createElement("div");
+        noteDiv.className = "note";
+        noteDiv.innerHTML = `<p><strong>${formattedDate}</strong></p><p>${(note.content||'').replace(/\n/g,'<br/>')}</p>`;
+        notesList.appendChild(noteDiv);
+      });
+    }
+
+    function fetchNotesFromBackend() {
+      fetch("/user/notes")
+        .then(r=>r.json())
+        .then(renderNotes)
+        .catch(error => console.error("Error fetching notes:", error));
+    }
+
+    function fetchNotesForDate(date) {
+      fetch(`/user/notes?date=${encodeURIComponent(date)}`)
+        .then(r=>r.json())
+        .then(data=>{
+          const arr = Array.isArray(data) ? data : (data ? [data] : []);
+          renderNotes(arr);
+        })
+        .catch(error => console.error("Error fetching notes:", error));
+    }
+
+    if (noteDate) { fetchNotesForDate(noteDate); } else { fetchNotesFromBackend(); }
+  });
+</script>
+</body>
+</html>

@@ -1,4 +1,3 @@
-<!-- home.html (My Profile, dark iOS style) -->
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -6,9 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>My Profile - MindChatBot</title>
 
-    <!-- App styles (your main dark theme) -->
+    <!-- Favicons -->
+    <link rel="icon" th:href="@{/icons/favicon.ico?v=3}" href="/icons/favicon.ico?v=3">
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/icons/favicon-32.png?v=3}" href="/icons/favicon-32.png?v=3">
+    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/icons/favicon-16.png?v=3}" href="/icons/favicon-16.png?v=3">
+    <link rel="apple-touch-icon" th:href="@{/icons/apple-touch-icon.png?v=3}" href="/icons/apple-touch-icon.png?v=3">
+    <meta name="theme-color" content="#0b0e23">
+
+    <!-- Windows tile -->
+    <meta name="msapplication-TileImage" content="/icons/mstile-150x150.png">
+    <meta name="msapplication-TileColor" content="#0b0e23">
+
+    <!-- PWA manifest -->
+    <link rel="manifest" th:href="@{/icons/site.webmanifest?v=3}" href="/icons/site.webmanifest?v=3">
+
+
+    <!-- App styles -->
     <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css" />
-    <!-- Auth theme utilities (gradients + iOS buttons) -->
+    <!-- Auth theme utilities -->
     <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css" />
 
     <style>
@@ -19,12 +33,21 @@
         .kv b{display:inline-block;min-width:90px}
         .muted{ color:var(--ios-subtext) }
         .actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+        .brand-badge{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
+          background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+        .brand-badge img{width:28px;height:28px;display:block}
+        .profile-head{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:10px}
     </style>
 </head>
 <body class="bg-grad-purple">
 <main class="page-center">
     <section class="section narrow">
-        <h2 style="text-align:center">Profile Information</h2>
+        <div class="profile-head">
+            <div class="brand-badge">
+                <img th:src="@{/icons/app-icon-64.png}" src="/icons/app-icon-64.png" alt="MindChatBot" />
+            </div>
+            <h2 style="margin:0">Profile Information</h2>
+        </div>
 
         <div class="row">
             <div>
@@ -34,10 +57,12 @@
             </div>
         </div>
 
+        <!-- actions -->
         <div class="actions">
-            <a th:href="@{/}" href="/index.html" class="stylish-btn" data-variant="gray">← Main</a>
-            <a th:href="@{/notes}" href="/notes.html" class="stylish-btn" data-variant="success">All Notes</a>
+            <a th:href="@{/index}" href="/index" class="stylish-btn" data-variant="gray">← Main</a>
+            <a th:href="@{/notes}" href="/notes" class="stylish-btn" data-variant="success">All Notes</a>
         </div>
+
     </section>
 </main>
 

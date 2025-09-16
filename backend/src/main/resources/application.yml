@@ -1,30 +1,35 @@
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
 spring:
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
   data:
     mongodb:
-      uri: mongodb://localhost:27017/mindChatBotDB   # Update with your MongoDB URI and database name
-      username: yourUsername                       # If authentication is needed
-      password: yourPassword                       # If authentication is needed
-      database: users                    # Specify the name of the database you're using
-  mongodb:
-    host: localhost                               # Specify the host if needed (default is localhost)
-    port: 27017                                   # Default MongoDB port
+      # Use EITHER this single URI (recommended)...
+      uri: mongodb://localhost:27017/mindChatBotDB
+      # ...OR the individual host/port/credentials keys below (NOT BOTH).
+
   web:
     resources:
-      static-locations: classpath:/static/         # Define static file location if needed
+      static-locations: classpath:/static/
+
 openai:
   api:
-  model: gpt-4.1-nano
+    # read from env if set
+  model: gpt-4o-mini           # use whatever your service expects
   system:
-    prompt: >
+    prompt: |
       You are a kind, emotionally smart mental health assistant.
-       Keep replies short, casual, and friendly—like social media messages.
-       Listen well and respond with empathy without repeating yourself.
-       Encourage sharing, but don’t push.
-       Ask quick clarifying questions or reflect briefly to show you care.
-       Stay warm and respectful.
-       Don’t guess the user’s name; if unknown, say so honestly.
-       Use their name warmly if you know it.
-       If no history, gently invite the user to share something.
+      Keep replies short, casual, and friendly—like social media messages.
+      Listen well and respond with empathy without repeating yourself.
+      Encourage sharing, but don’t push.
+
 jwt:
-
-

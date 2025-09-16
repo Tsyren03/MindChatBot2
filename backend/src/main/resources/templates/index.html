@@ -1,96 +1,150 @@
-<!-- index.html -->
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Mental Health Support</title>
-    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <title th:text="#{app.title}">Mental Health Support</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css">
+    <style>
+        .lang-switch{position:sticky;top:0;z-index:60;display:flex;gap:8px;justify-content:flex-end;padding:10px}
+        .lang-switch a{background:#1c2230;color:#fff;border:1px solid var(--ios-separator);border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer;text-decoration:none}
+        .lang-switch a.active{background:var(--ios-blue)}
+    </style>
 </head>
 <body>
+
+<!-- Language switch (server-side links, no JS needed) -->
+<nav class="lang-switch" role="navigation" aria-label="Language">
+    <a id="lang-en"
+       th:href="@{/index(lang='en')}"
+       th:classappend="${#locale.language}=='en' ? ' active' : ''">EN</a>
+    <a id="lang-ko"
+       th:href="@{/index(lang='ko')}"
+       th:classappend="${#locale.language}=='ko' ? ' active' : ''">한국어</a>
+    <a id="lang-ru"
+       th:href="@{/index(lang='ru')}"
+       th:classappend="${#locale.language}=='ru' ? ' active' : ''">RU</a>
+</nav>
+
 <main class="container three-column-layout">
-    <!-- Mood Tracker Section -->
-    <section class="section mood-tracker">
-        <h2>Mood Tracker</h2>
-        <div class="today-date" id="current-date"></div>
+    <!-- Mood Tracker -->
+    <section id="mood-tracker" class="section mood-tracker" aria-labelledby="mt-title" role="tabpanel">
+        <h2 id="mt-title" th:text="#{mood.tracker}">Mood Tracker</h2>
+        <div class="today-date" id="current-date" th:text="#{mood.today} + ' '">Today:</div>
 
         <div class="calendar-controls">
             <button class="stylish-btn" id="prev-month" aria-label="Previous Month">◀</button>
-            <span id="current-month">March 2025</span>
+            <span id="current-month">—</span>
             <button class="stylish-btn" id="next-month" aria-label="Next Month">▶</button>
         </div>
 
         <div class="calendar-responsive-wrapper">
             <div class="calendar">
                 <div class="calendar-weekdays">
-                    <span>Mon</span>
-                    <span>Tue</span>
-                    <span>Wed</span>
-                    <span>Thu</span>
-                    <span>Fri</span>
-                    <span>Sat</span>
-                    <span class="sunday">Sun</span>
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span class="sunday">Sun</span>
                 </div>
-                <div id="calendar"></div>
+                <div id="calendar" aria-live="polite"></div>
             </div>
         </div>
 
         <div id="emotion-buttons" class="emotion-buttons one-row">
-            <button class="mood-btn bad" onclick="showSubMoodButtons('bad')" aria-label="Bad Mood">😞 Bad</button>
-            <button class="mood-btn poor" onclick="showSubMoodButtons('poor')" aria-label="Poor Mood">😕 Poor</button>
-            <button class="mood-btn neutral" onclick="showSubMoodButtons('neutral')" aria-label="Neutral Mood">😐 Neutral</button>
-            <button class="mood-btn good" onclick="showSubMoodButtons('good')" aria-label="Good Mood">🙂 Good</button>
-            <button class="mood-btn best" onclick="showSubMoodButtons('best')" aria-label="Best Mood">😃 Best</button>
+            <button class="mood-btn bad"     onclick="showSubMoodButtons('bad')"     aria-label="Bad Mood">😞 <span th:text="#{mood.bad}">Bad</span></button>
+            <button class="mood-btn poor"    onclick="showSubMoodButtons('poor')"    aria-label="Poor Mood">😕 <span th:text="#{mood.poor}">Poor</span></button>
+            <button class="mood-btn neutral" onclick="showSubMoodButtons('neutral')" aria-label="Neutral Mood">😐 <span th:text="#{mood.neutral}">Neutral</span></button>
+            <button class="mood-btn good"    onclick="showSubMoodButtons('good')"    aria-label="Good Mood">🙂 <span th:text="#{mood.good}">Good</span></button>
+            <button class="mood-btn best"    onclick="showSubMoodButtons('best')"    aria-label="Best Mood">😃 <span th:text="#{mood.best}">Best</span></button>
         </div>
 
         <div id="submood-buttons-container"></div>
 
         <div class="note">
-            <a href="/statistics.html" class="stylish-btn">📊 View Mood Statistics</a>
+            <a th:href="@{/statistics}" href="/statistics" class="stylish-btn" data-variant="gray" th:text="#{nav.viewStats}">📊 View Mood Statistics</a>
         </div>
     </section>
 
-    <!-- Journaling Section -->
-    <section class="section journaling">
-        <h2>Journaling</h2>
-        <form id="new-note-form">
-            <label for="note-content">Note Content:</label>
-            <textarea id="note-content" name="content" required placeholder="Write your note here..."></textarea>
+    <!-- Journaling -->
+    <section id="journaling" class="section journaling" aria-labelledby="jr-title" role="tabpanel">
+        <h2 id="jr-title" th:text="#{journaling.title}">Journaling</h2>
+        <form id="new-note-form" novalidate>
+            <label for="note-content" th:text="#{journaling.title}">Journaling</label>
+            <textarea id="note-content" name="content" required placeholder="Write your note here..." inputmode="text"></textarea>
 
             <label for="note-date">Date:</label>
-            <input type="date" id="note-date" name="date" required>
+            <input type="date" id="note-date" name="date" required />
 
-            <button type="submit">Save Note</button>
+            <button type="submit" class="stylish-btn" data-variant="success" th:text="#{journaling.save}">Save Note</button>
         </form>
 
         <div class="note">
-            <a href="/notes.html">View all notes</a>
+            <a th:href="@{/notes}" href="/notes" class="stylish-btn" data-variant="gray" th:text="#{nav.viewAllNotes}">View all notes</a>
         </div>
     </section>
 
-    <!-- Chat Box Section -->
-    <section class="section chat-section">
-        <h2>Mind Chat Bot</h2>
-        <div class="chat-greeting">👋 Welcome! Start chatting with your AI friend.</div>
+    <!-- Chat -->
+    <section id="chat-section" class="section chat-section" aria-labelledby="cb-title" role="tabpanel">
+        <h2 id="cb-title" th:text="#{chat.title}">Mind Chat Bot</h2>
+        <div class="chat-greeting" th:text="#{chat.greeting}">👋 Welcome! Start chatting with your AI friend.</div>
 
         <div class="chat-box" id="chat-box">
             <div class="messages" id="messages"></div>
 
             <div class="input-area">
-                <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
-                <button id="send-btn" type="button">Send</button>
+                <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off" enterkeyhint="send">
+                <button id="send-btn" type="button" class="stylish-btn">Send</button>
             </div>
 
             <div class="chat-actions">
                 <form th:action="@{/logout}" method="post">
-                    <button type="submit" class="stylish-btn">Logout</button>
+                    <button type="submit" class="stylish-btn" data-variant="gray" th:text="#{buttons.logout}">Logout</button>
                 </form>
-                <a href="/home.html" class="stylish-btn">My Profile</a>
+                <a th:href="@{/home}" href="/home" class="stylish-btn" data-variant="success" th:text="#{buttons.profile}">My Profile</a>
             </div>
         </div>
     </section>
 </main>
 
-<script th:src="@{/js/script.js}"></script>
+<!-- Inject localized JS strings -->
+<script th:inline="javascript">
+    window.I18N = Object.assign({}, window.I18N || {}, {
+      write_something: /*[[#{js.write_something}]]*/ 'Please write something first.',
+      login_required:  /*[[#{js.login_required}]]*/  'Please log in to save notes.',
+      failed_save_note:/*[[#{js.failed_save_note}]]*/'Failed to save note.',
+      unexpected_server:/*[[#{js.unexpected_server}]]*/'Server returned an unexpected response while saving the note.',
+      network_note:    /*[[#{js.network_note}]]*/    'An error occurred while saving the note.',
+      note_saved:      /*[[#{js.note_saved}]]*/      'Note saved.',
+      mood_saved:      /*[[#{js.mood_saved}]]*/      'Your mood has been saved.',
+      popup_title:     /*[[#{js.mood_popup_title}]]*/'AI Mood Suggestion',
+      popup_for:       /*[[#{js.mood_popup_for}]]*/  'AI recognized your mood for',
+      popup_save:      /*[[#{js.mood_popup_save}]]*/ 'Save',
+      popup_cancel:    /*[[#{js.mood_popup_cancel}]]*/'Cancel'
+      "mood.sub.proud":       /*[[#{mood.sub.proud}]]*/       "Proud",
+    "mood.sub.grateful":    /*[[#{mood.sub.grateful}]]*/    "Grateful",
+    "mood.sub.energetic":   /*[[#{mood.sub.energetic}]]*/   "Energetic",
+    "mood.sub.excited":     /*[[#{mood.sub.excited}]]*/     "Excited",
+    "mood.sub.fulfilled":   /*[[#{mood.sub.fulfilled}]]*/   "Fulfilled",
+    "mood.sub.calm":        /*[[#{mood.sub.calm}]]*/        "Calm",
+    "mood.sub.productive":  /*[[#{mood.sub.productive}]]*/  "Productive",
+    "mood.sub.hopeful":     /*[[#{mood.sub.hopeful}]]*/     "Hopeful",
+    "mood.sub.motivated":   /*[[#{mood.sub.motivated}]]*/   "Motivated",
+    "mood.sub.friendly":    /*[[#{mood.sub.friendly}]]*/    "Friendly",
+    "mood.sub.indifferent": /*[[#{mood.sub.indifferent}]]*/ "Indifferent",
+    "mood.sub.blank":       /*[[#{mood.sub.blank}]]*/       "Blank",
+    "mood.sub.tired":       /*[[#{mood.sub.tired}]]*/       "Tired",
+    "mood.sub.bored":       /*[[#{mood.sub.bored}]]*/       "Bored",
+    "mood.sub.quiet":       /*[[#{mood.sub.quiet}]]*/       "Quiet",
+    "mood.sub.frustrated":  /*[[#{mood.sub.frustrated}]]*/  "Frustrated",
+    "mood.sub.overwhelmed": /*[[#{mood.sub.overwhelmed}]]*/ "Overwhelmed",
+    "mood.sub.nervous":     /*[[#{mood.sub.nervous}]]*/     "Nervous",
+    "mood.sub.insecure":    /*[[#{mood.sub.insecure}]]*/    "Insecure",
+    "mood.sub.confused":    /*[[#{mood.sub.confused}]]*/    "Confused",
+    "mood.sub.angry":       /*[[#{mood.sub.angry}]]*/       "Angry",
+    "mood.sub.sad":         /*[[#{mood.sub.sad}]]*/         "Sad",
+    "mood.sub.lonely":      /*[[#{mood.sub.lonely}]]*/      "Lonely",
+    "mood.sub.anxious":     /*[[#{mood.sub.anxious}]]*/     "Anxious",
+    "mood.sub.hopeless":    /*[[#{mood.sub.hopeless}]]*/    "Hopeless"
+    });
+</script>
+
+<script th:src="@{/js/script.js}" src="/js/script.js" defer></script>
 </body>
 </html>

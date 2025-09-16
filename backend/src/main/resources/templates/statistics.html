@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html th:lang="${#locale}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="#{stats.title}">Mood Statistics</title>
+
+    <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css"/>
+    <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css"/>
+
+    <style>
+        .page-center{min-height:100dvh;display:grid;place-items:center;padding:clamp(12px,3vw,32px)}
+        .section.wide{max-width:1100px;width:100%}
+        .charts{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+        .chart-block{flex:1 1 auto}
+        .pie-block{max-width:520px}
+        .lines-block{max-width:900px;width:100%}
+
+        canvas{background:transparent;border:1px solid var(--ios-separator);border-radius:16px;padding:8px;max-width:100%}
+        #subMoodChartsContainer{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+        #subMoodChartsContainer .mini{width:260px}
+        .mini h4{margin:0 0 8px 0;text-align:center;font-weight:800}
+
+        .month-toolbar{display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 10px}
+        .month-label{font-weight:800;font-size:15px;color:var(--ios-text);padding:6px 10px;background:#1c2230;border:1px solid var(--ios-separator);border-radius:10px}
+
+        .stylish-btn{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;line-height:1.2;text-indent:0}
+        .stylish-btn .sr-only{position:static;clip:auto;width:auto;height:auto;overflow:visible}
+
+        .lang-switch{position:sticky;top:0;z-index:60;display:flex;gap:8px;justify-content:flex-end;padding:10px}
+        .lang-switch button{background:#1c2230;color:#fff;border:1px solid var(--ios-separator);border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer}
+        .lang-switch button.active{background:var(--ios-blue)}
+        .sec-title{margin:12px 0 8px 0;text-align:center;font-weight:800}
+    </style>
+</head>
+<body class="bg-grad-purple"
+      th:with="L=${#lists.isEmpty(param.lang) ? #locale.language : param.lang[0]}">
+
+<nav class="lang-switch" role="navigation" aria-label="Language">
+    <button id="lang-en" onclick="switchLang('en')">EN</button>
+    <button id="lang-ko" onclick="switchLang('ko')">한국어</button>
+    <button id="lang-ru" onclick="switchLang('ru')">RU</button>
+</nav>
+
+<main class="page-center">
+    <section class="section wide">
+        <h2 style="text-align:center" th:text="#{stats.title}">Mood Statistics</h2>
+
+        <!-- 1) Monthly line first -->
+        <h3 class="sec-title" th:text="#{stats.dailyMood}">Moods by Date</h3>
+        <div class="charts">
+            <div class="chart-block lines-block">
+                <div class="month-toolbar">
+                    <button class="stylish-btn" id="prevMonth" aria-label="Previous month" th:text="#{stats.prev}">⟵ Prev</button>
+                    <span id="monthLabel" class="month-label">—</span>
+                    <button class="stylish-btn" id="nextMonth" aria-label="Next month" th:text="#{stats.next}">Next ⟶</button>
+                    <button class="stylish-btn" id="thisMonth" data-variant="gray" th:text="#{stats.thisMonth}">This Month</button>
+                </div>
+                <canvas id="moodMonthlyLines" height="280"></canvas>
+                <div id="monthlyNoData" style="display:none;text-align:center;margin-top:8px;color:#9fb0c6;font-weight:700"
+                     th:text="#{stats.noData}">No data for this month.</div>
+            </div>
+        </div>
+
+        <!-- 2) Main distribution pie -->
+        <h3 class="sec-title" th:text="#{stats.mainPieTitle}">Main Mood Distribution</h3>
+        <div class="charts">
+            <div class="chart-block pie-block">
+                <canvas id="moodChart" height="240" width="240"></canvas>
+            </div>
+        </div>
+
+        <!-- 3) Submood pies -->
+        <h3 class="sec-title" th:text="#{stats.subPieTitle}">Submood Breakdown</h3>
+        <div id="subMoodChartsContainer"></div>
+
+        <div style="margin-top:14px;text-align:center">
+            <a class="stylish-btn" data-variant="gray"
+               th:href="@{/index(lang=${L})}" href="/index">← <span th:text="#{nav.backMain}">Back to Main</span></a>
+        </div>
+    </section>
+</main>
+
+<!-- Chart libs -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+
+<!-- i18n strings for JS -->
+<script th:inline="javascript">
+    window.I18N = Object.assign({}, window.I18N || {}, {
+      mood_bad:     /*[[#{mood.bad}]]*/     'Bad',
+      mood_poor:    /*[[#{mood.poor}]]*/    'Poor',
+      mood_neutral: /*[[#{mood.neutral}]]*/ 'Neutral',
+      mood_good:    /*[[#{mood.good}]]*/    'Good',
+      mood_best:    /*[[#{mood.best}]]*/    'Best',
+      stats_mainPieTitle: /*[[#{stats.mainPieTitle}]]*/ 'Main Mood Distribution',
+      stats_subPieTitle:  /*[[#{stats.subPieTitle}]]*/  'Submood Breakdown',
+      stats_dailyMoodTitle: /*[[#{stats.dailyMood}]]*/ 'Moods by Date (selected month)'
+    });
+
+    const CUR_LANG=(new URLSearchParams(location.search).get('lang'))||/*[[${L}]]*/'en';
+    function switchLang(lang){const u=new URL(location.href);u.searchParams.set('lang',lang);location.href=u.toString();}
+    document.addEventListener('DOMContentLoaded',()=>{
+      document.getElementById('lang-'+CUR_LANG)?.classList.add('active');
+      document.documentElement.lang = CUR_LANG;
+      document.querySelectorAll('a[href^="/"],a[href^="./"],a[href^="../"]').forEach(a=>{
+        try{const u=new URL(a.href,location.origin);if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}}catch{}
+      });
+      document.querySelectorAll('form').forEach(f=>{
+        if(!f.querySelector('input[name="lang"]')){ const i=document.createElement('input'); i.type='hidden'; i.name='lang'; i.value=CUR_LANG; f.appendChild(i); }
+      });
+    });
+</script>
+
+<!-- Page logic -->
+<script th:src="@{/js/statistics.js}" src="/js/statistics.js"></script>
+</body>
+</html>

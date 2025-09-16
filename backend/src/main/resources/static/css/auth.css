@@ -165,3 +165,10 @@ body{
   box-shadow: none !important;
   background-image: none !important;
 }
+.auth-head{display:flex;align-items:center;gap:12px}
+.brand-badge{
+  width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 6px 18px rgba(0,0,0,.35)
+}
+.brand-badge img{width:28px;height:28px;display:block}

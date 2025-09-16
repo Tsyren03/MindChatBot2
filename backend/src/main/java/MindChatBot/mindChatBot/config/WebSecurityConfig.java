@@ -2,7 +2,7 @@
 package MindChatBot.mindChatBot.config;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.security.servlet.PathRequest; // <-- add
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -50,26 +50,32 @@ public class WebSecurityConfig {
     }
 
     // ----- Web (form login) -----
-// WebSecurityConfig.java (webChain)
     @Bean
     @Order(2)
     public SecurityFilterChain webChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(
-                                "/api/**",
-                                "/user/moods/**",
-                                "/user/notes",
-                                "/user/profile"
-                        )
-                )
+                .csrf(csrf -> csrf.ignoringRequestMatchers(
+                        "/api/**",
+                        "/user/moods/**",
+                        "/user/notes",
+                        "/user/profile"
+                ))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
+                        // Public pages
                         .requestMatchers("/login", "/signup", "/user/register", "/error", "/favicon.ico").permitAll()
-                        .requestMatchers(org.springframework.boot.autoconfigure.security.servlet.PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .requestMatchers("/assets/**", "/static/**").permitAll()
+
+                        // All static resources under classpath:/static, /public, etc.
+                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+
+                        // If you serve icons/uploads explicitly (optional, but safe)
+                        .requestMatchers("/icons/**", "/uploads/**", "/site.webmanifest", "/manifest.webmanifest").permitAll()
+
+                        // Role areas
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/user/**").hasAnyRole("USER","ADMIN")
+                        .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+
+                        // Everything else
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -84,7 +90,6 @@ public class WebSecurityConfig {
 
         return http.build();
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
