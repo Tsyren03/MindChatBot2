@@ -39,6 +39,7 @@ function pageLang() {
   return (q || html || 'en').split('-')[0]; // -> 'ko', 'ru', 'en'
 }
 const LANG = pageLang();
+
 /* ===== Per-user chat history ===== */
 const CHAT_NS = "chatMessages_v4_";
 let IDENTITY = { key: `guest:${getDeviceId()}`, email: null, uid: null, token: null };
@@ -174,7 +175,8 @@ function showRecognizedMoodPopup(moodObj) {
       month: moodObj.month,
       day:   moodObj.day,
       emoji: moodObj.main,
-      subMood: moodObj.sub
+      subMood: moodObj.sub,
+      lang: LANG
     };
 
     const sig = `${payload.year}-${payload.month}-${payload.day}:${payload.emoji}/${payload.subMood}`;
@@ -190,7 +192,11 @@ function showRecognizedMoodPopup(moodObj) {
     try {
       res = await fetch('/user/moods/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token && { "Authorization": `Bearer ${token}` }) },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': LANG,
+          ...(token && { "Authorization": `Bearer ${token}` })
+        },
         body: JSON.stringify(payload),
         credentials: 'same-origin'
       });
@@ -327,9 +333,10 @@ document.addEventListener("DOMContentLoaded", async function () {
           headers: {
             "Accept": "application/json",
             "Content-Type": "application/json",
+            "Accept-Language": LANG,
             ...(token && { "Authorization": `Bearer ${token}` })
           },
-          body: JSON.stringify({ content, date })
+          body: JSON.stringify({ content, date, lang: LANG })
         });
 
         const bodyText = await res.text();
@@ -386,7 +393,10 @@ document.addEventListener("DOMContentLoaded", async function () {
   async function fetchMoods(year, month) {
     const { token } = getUserIdFromToken();
     const url = `/user/moods/fetch?year=${year}&month=${month + 1}`;
-    const res = await fetch(url, { headers: { ...(token && { "Authorization": `Bearer ${token}` }) }, cache: "no-store" });
+    const res = await fetch(url, {
+      headers: { 'Accept-Language': LANG, ...(token && { "Authorization": `Bearer ${token}` }) },
+      cache: "no-store"
+    });
     if (!res.ok) { console.error("fetchMoods failed", res.status); return []; }
     return res.json();
   }
@@ -614,7 +624,7 @@ async function saveMoodWithSubMoodLive(emoji, subMood) {
   const day = parseInt(selectedDayElement.dataset.day, 10);
   const year = parseInt(document.getElementById("current-month").dataset.year, 10);
   const month = parseInt(document.getElementById("current-month").dataset.month, 10);
-  const mood = { year, month: month + 1, day, emoji, subMood };
+  const mood = { year, month: month + 1, day, emoji, subMood, lang: LANG };
 
   // dedupe manual saves too
   const sig = `${mood.year}-${mood.month}-${mood.day}:${mood.emoji}/${mood.subMood}`;
@@ -629,7 +639,11 @@ async function saveMoodWithSubMoodLive(emoji, subMood) {
   try {
     res = await fetch('/user/moods/save', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token && { "Authorization": `Bearer ${token}` }) },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept-Language': LANG,
+        ...(token && { "Authorization": `Bearer ${token}` })
+      },
       body: JSON.stringify(mood)
     });
   } catch (e) { console.error("Network error", e); alert(t('network_note','An error occurred while saving the note.')); return; }
@@ -657,8 +671,12 @@ async function sendMessage() {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(token && { "Authorization": `Bearer ${token}` }) },
-      body: JSON.stringify({ message, userId })
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Language": LANG,
+        ...(token && { "Authorization": `Bearer ${token}` })
+      },
+      body: JSON.stringify({ message, userId, lang: LANG })
     });
     const data = await response.json().catch(()=> ({}));
     await addBotMessageTyping(data.response || ("⚠️ " + (data.error || "Unknown server response.")));

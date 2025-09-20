@@ -1,16 +1,17 @@
-// File: MindChatBot/mindChatBot/controller/MoodController.java
+// File: src/main/java/MindChatBot/mindChatBot/controller/MoodController.java
 package MindChatBot.mindChatBot.controller;
 
 import MindChatBot.mindChatBot.model.Mood;
 import MindChatBot.mindChatBot.service.MoodService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/user/moods")
@@ -23,14 +24,14 @@ public class MoodController {
         this.moodService = moodService;
     }
 
-    // ✅ New: GET version (no CSRF)
+    // GET: used by your calendar fetch (?year=&month=)
     @GetMapping("/fetch")
     public List<Mood> getMoodsByQuery(@RequestParam int year, @RequestParam int month) {
         String userId = getCurrentUserId();
         return moodService.getMoodsByMonth(userId, year, month);
     }
 
-    // (keep if you also call POST elsewhere; otherwise you can remove)
+    // POST: optional (keep only if you also call it from somewhere)
     @PostMapping("/fetch")
     public List<Mood> getMoodsByJson(@RequestBody Map<String, Integer> request) {
         String userId = getCurrentUserId();
@@ -40,10 +41,19 @@ public class MoodController {
         return moodService.getMoodsByMonth(userId, year, month);
     }
 
+    // SAVE mood and return a single localized bot reply
     @PostMapping("/save")
-    public Mono<Map<String, Object>> saveMood(@RequestBody MindChatBot.mindChatBot.model.Mood mood) {
+    public Mono<Map<String, Object>> saveMood(
+            @RequestBody Mood mood,
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage
+    ) {
         String userId = getCurrentUserId();
-        return moodService.saveMoodWithReply(userId, mood);
+
+        String bodyLang = (mood.getLang() == null ? null : mood.getLang()); // if you added "lang" to Mood; ok if null
+        String lang = normalizeLang(bodyLang, acceptLanguage, LocaleContextHolder.getLocale());
+
+        // NOTE: add a lang parameter to your service method.
+        return moodService.saveMoodWithReply(userId, mood, lang);
     }
 
     @GetMapping("/stats")
@@ -58,13 +68,24 @@ public class MoodController {
         return moodService.getAllMoodsForUser(userId);
     }
 
-    // ✅ Robust principal resolution: supports String, Spring UserDetails, or your User
+    /* ---------- helpers ---------- */
+
+    private static String normalizeLang(String bodyLang, String headerLang, java.util.Locale reqLocale) {
+        String l = (StringUtils.hasText(bodyLang) ? bodyLang
+                : (StringUtils.hasText(headerLang) ? headerLang
+                : (reqLocale != null ? reqLocale.getLanguage() : "en")));
+        l = l.toLowerCase(Locale.ROOT);
+        if (l.startsWith("ko")) return "ko";
+        if (l.startsWith("ru")) return "ru";
+        return "en";
+    }
+
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) throw new IllegalStateException("No authentication in context");
         Object p = auth.getPrincipal();
         if (p instanceof MindChatBot.mindChatBot.model.User u) return u.getId();
         if (p instanceof org.springframework.security.core.userdetails.User u) return u.getUsername();
-        return String.valueOf(p); // e.g., email if you used subject as principal
+        return String.valueOf(p);
     }
 }

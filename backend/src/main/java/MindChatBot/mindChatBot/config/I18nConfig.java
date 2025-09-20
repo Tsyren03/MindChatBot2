@@ -1,4 +1,3 @@
-// backend/src/main/java/MindChatBot/mindChatBot/config/I18nConfig.java
 package MindChatBot.mindChatBot.config;
 
 import org.springframework.context.MessageSource;
@@ -30,9 +29,17 @@ public class I18nConfig implements WebMvcConfigurer {
         return lci;
     }
 
+    @Bean
+    public HeaderLocaleInterceptor headerLocaleInterceptor(LocaleResolver localeResolver) {
+        return new HeaderLocaleInterceptor(localeResolver);
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 1) ?lang= takes priority
         registry.addInterceptor(localeChangeInterceptor());
+        // 2) If no ?lang=, fall back to Accept-Language
+        registry.addInterceptor(headerLocaleInterceptor(localeResolver()));
     }
 
     @Bean
