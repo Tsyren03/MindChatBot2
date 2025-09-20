@@ -170,14 +170,27 @@ function showRecognizedMoodPopup(moodObj) {
     __moodSaveBusy = true;
     acceptBtn.disabled = true;
 
-    const payload = {
-      year:  moodObj.year,
-      month: moodObj.month,
-      day:   moodObj.day,
-      emoji: moodObj.main,
-      subMood: moodObj.sub,
-      lang: LANG
-    };
+// inside acceptBtn.onclick in showRecognizedMoodPopup(...)
+const payload = {
+  year:  moodObj.year,
+  month: moodObj.month,
+  day:   moodObj.day,
+  emoji: moodObj.main,
+  subMood: moodObj.sub,
+  lang: LANG
+};
+
+res = await fetch('/user/moods/save', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept-Language': LANG,             // 👈 force server language
+    ...(token && { "Authorization": `Bearer ${token}` })
+  },
+  body: JSON.stringify(payload),
+  credentials: 'same-origin'
+});
+
 
     const sig = `${payload.year}-${payload.month}-${payload.day}:${payload.emoji}/${payload.subMood}`;
     if (sig === __lastMoodSig) {
