@@ -1,2 +1,52 @@
-# Auto detect text files and perform LF normalization
+# from repo root
+cat > .gitattributes <<'EOF'
+# Normalize line endings across platforms
 * text=auto
+* eol=lf
+
+# Windows-specific script files
+*.bat eol=crlf
+*.cmd eol=crlf
+*.ps1 eol=crlf
+
+# Unix shell scripts
+*.sh eol=lf
+
+# Treat these as text (ensure LF)
+*.java text
+*.kt text
+*.kts text
+*.gradle text
+*.gradle.kts text
+pom.xml text
+*.xml text
+*.properties text
+*.yml text
+*.yaml text
+*.json text
+*.md text
+*.html text
+*.css text
+*.js text
+*.ts text
+
+# Binary files (no diff/merge, no eol conversion)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.ico binary
+*.pdf binary
+*.jar binary
+*.zip binary
+*.gz binary
+*.7z binary
+
+# Documentation classification for GitHub linguist
+/docs/** linguist-documentation
+EOF
+
+git add .gitattributes
+git commit -m "chore: add .gitattributes for EOL normalization & binary handling"
+git push
