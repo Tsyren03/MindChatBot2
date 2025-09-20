@@ -33,7 +33,12 @@ function currentLocale(){
 }
 function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 function subMoodLabel(code){ return t(`mood.sub.${code}`, capitalize(code)); }
-
+function pageLang() {
+  const q = new URLSearchParams(location.search).get('lang');
+  const html = (document.documentElement.lang || '').toLowerCase();
+  return (q || html || 'en').split('-')[0]; // -> 'ko', 'ru', 'en'
+}
+const LANG = pageLang();
 /* ===== Per-user chat history ===== */
 const CHAT_NS = "chatMessages_v4_";
 let IDENTITY = { key: `guest:${getDeviceId()}`, email: null, uid: null, token: null };

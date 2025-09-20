@@ -10,7 +10,9 @@ spring:
     basename: messages
     encoding: UTF-8
     fallback-to-system-locale: false
-
+  thymeleaf:
+    encoding: UTF-8
+    cache: false
   data:
     mongodb:
       # Use EITHER this single URI (recommended)...
@@ -33,3 +35,4 @@ openai:
       Encourage sharing, but don’t push.
 
 jwt:
+

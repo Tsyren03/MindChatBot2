@@ -1,3 +1,4 @@
+// backend/src/main/java/MindChatBot/mindChatBot/config/I18nConfig.java
 package MindChatBot.mindChatBot.config;
 
 import org.springframework.context.MessageSource;
@@ -17,15 +18,15 @@ public class I18nConfig implements WebMvcConfigurer {
 
     @Bean
     public LocaleResolver localeResolver() {
-        SessionLocaleResolver r = new SessionLocaleResolver();
-        r.setDefaultLocale(Locale.ENGLISH); // default
-        return r;
+        SessionLocaleResolver slr = new SessionLocaleResolver();
+        slr.setDefaultLocale(Locale.ENGLISH);
+        return slr;
     }
 
     @Bean
     public LocaleChangeInterceptor localeChangeInterceptor() {
         LocaleChangeInterceptor lci = new LocaleChangeInterceptor();
-        lci.setParamName("lang"); // use ?lang=en|ko|ru
+        lci.setParamName("lang");
         return lci;
     }
 
@@ -37,9 +38,10 @@ public class I18nConfig implements WebMvcConfigurer {
     @Bean
     public MessageSource messageSource() {
         ReloadableResourceBundleMessageSource ms = new ReloadableResourceBundleMessageSource();
-        ms.setBasename("classpath:messages");   // messages_*.properties
+        ms.setBasename("classpath:messages");
         ms.setDefaultEncoding("UTF-8");
-        ms.setCacheSeconds(10);
+        ms.setFallbackToSystemLocale(false);
+        ms.setCacheSeconds(1);
         return ms;
     }
 }

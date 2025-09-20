@@ -1,4 +1,4 @@
-/* statistics.js — monthly-first agenda, full-month line, i18n labels */
+/* statistics.js — monthly-first agenda, full-month line, i18n labels + localized submood pies */
 (function () {
   // ---- auth helpers ----
   const token = () => localStorage.getItem("authToken") || null;
@@ -7,6 +7,11 @@
   // ---- i18n helpers ----
   const t = (k, d) => (window.I18N && typeof I18N[k] === 'string') ? I18N[k] : d;
   const L = (new URLSearchParams(location.search).get('lang')) || document.documentElement.lang || 'en';
+
+  // submood localization (from statistics.html injection)
+  const SUBLABELS = (window.SUBMOOD_LABELS || {});
+  const cap = (s)=> s ? s.charAt(0).toUpperCase()+s.slice(1) : s;
+  const lsub = (code)=> SUBLABELS[code] || cap(code);
 
   // ---- chart theme ----
   Chart.defaults.color = "#e9eef6";
@@ -68,13 +73,14 @@
   let lineChart = null;
   const MONTH_CACHE = new Map(); // "yyyy-mm" -> Map("yyyy-mm-dd" -> level 1..5)
 
-  // ---- pies ----
+  // ---- pies (overall stats) ----
   fetch("/user/moods/stats", {
     headers: { "Accept":"application/json", "Cache-Control":"no-cache", ...auth() },
     cache: "no-store", credentials: "same-origin"
   })
   .then(r=>r.json())
   .then(data=>{
+    // Main distribution pie
     if (data?.mainMoodStats && pieEl) {
       const s = data.mainMoodStats;
       new Chart(pieEl.getContext("2d"), {
@@ -97,6 +103,7 @@
       });
     }
 
+    // Submood pies (localized legends)
     if (data?.subMoodStats && subWrap) {
       const groups = {
         best:["proud","grateful","energetic","excited","fulfilled"],
@@ -105,12 +112,17 @@
         poor:["frustrated","overwhelmed","nervous","insecure","confused"],
         bad:["angry","sad","lonely","anxious","hopeless"]
       };
+
       subWrap.innerHTML = "";
+
       Object.keys(groups).forEach(main=>{
-        const vals = groups[main].map(s => (data.subMoodStats[`${main}:${s}`] || 0));
-        if (vals.reduce((a,b)=>a+b,0) === 0) return;
+        const subs = groups[main];
+        const vals = subs.map(s => (data.subMoodStats[`${main}:${s}`] || 0));
+        if (vals.reduce((a,b)=>a+b,0) === 0) return; // skip empty pies
+
         const card = document.createElement("div");
         card.className = "mini";
+
         const mainTitle = ({
           bad:   t('mood_bad','Bad'),
           poor:  t('mood_poor','Poor'),
@@ -118,15 +130,36 @@
           good:  t('mood_good','Good'),
           best:  t('mood_best','Best')
         })[main] || main;
+
         card.innerHTML = `<h4>${mainTitle}</h4><canvas height="200"></canvas>`;
         subWrap.appendChild(card);
+
         new Chart(card.querySelector("canvas").getContext("2d"), {
           type:"pie",
           data:{
-            labels: groups[main].map(s=>s[0].toUpperCase()+s.slice(1)),
-            datasets:[{ data: vals, backgroundColor: groups[main].map(s=>SUBCOLORS[main][s]) }]
+            // ✅ localized submood names here
+            labels: subs.map(lsub),
+            datasets:[{
+              data: vals,
+              backgroundColor: subs.map(s=>SUBCOLORS[main][s]),
+              borderColor: "#12151f",
+              borderWidth: 1
+            }]
           },
-          options:{ plugins:{ legend:{ labels:{ color:"#e9eef6", font:{ size:11 } }, position:'bottom' } } }
+          options:{
+            plugins:{
+              legend:{ labels:{ color:"#e9eef6", font:{ size:11 } }, position:'bottom' },
+              tooltip:{
+                callbacks:{
+                  label: (ctx)=>{
+                    const lbl = ctx.label || '';
+                    const v = ctx.parsed || 0;
+                    return ` ${lbl}: ${v}`;
+                  }
+                }
+              }
+            }
+          }
         });
       });
     }
@@ -137,7 +170,7 @@
     renderMonth(selectedMonth);
   });
 
-  // ---- monthly data ----
+  // ---- monthly data (per-day line) ----
   async function fetchMonthMap(monthStart){
     const y = monthStart.getFullYear(), m = monthStart.getMonth()+1;
     const key = `${y}-${String(m).padStart(2,"0")}`;
@@ -198,8 +231,8 @@
           pointRadius: (c)=> (c.raw!=null ? 5 : 0),
           pointHoverRadius: (c)=> (c.raw!=null ? 7 : 0),
           hitRadius: 10,
-          pointBackgroundColor: (c)=> colorByLevel(c.parsed.y),
-          pointBorderColor: (c)=> colorByLevel(c.parsed.y),
+          pointBackgroundColor: (c)=> colorByLevel(c.parsed && c.parsed.y),
+          pointBorderColor: (c)=> colorByLevel(c.parsed && c.parsed.y),
           segment: {
             borderColor: (c)=> colorByLevel((c.p1?.parsed?.y) ?? (c.p0?.parsed?.y) ?? 3)
           }

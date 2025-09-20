@@ -80,7 +80,6 @@
         </div>
     </section>
 </main>
-
 <!-- Chart libs -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/date-fns@3"></script>
@@ -94,10 +93,39 @@
       mood_neutral: /*[[#{mood.neutral}]]*/ 'Neutral',
       mood_good:    /*[[#{mood.good}]]*/    'Good',
       mood_best:    /*[[#{mood.best}]]*/    'Best',
-      stats_mainPieTitle: /*[[#{stats.mainPieTitle}]]*/ 'Main Mood Distribution',
-      stats_subPieTitle:  /*[[#{stats.subPieTitle}]]*/  'Submood Breakdown',
-      stats_dailyMoodTitle: /*[[#{stats.dailyMood}]]*/ 'Moods by Date (selected month)'
+      stats_mainPieTitle:      /*[[#{stats.mainPieTitle}]]*/ 'Main Mood Distribution',
+      stats_subPieTitle:       /*[[#{stats.subPieTitle}]]*/  'Submood Breakdown',
+      stats_dailyMoodTitle:    /*[[#{stats.dailyMood}]]*/    'Moods by Date (selected month)'
     });
+
+    /* ✅ Localized submood labels for legends & tooltips */
+    window.SUBMOOD_LABELS = {
+      proud:       /*[[#{mood.sub.proud}]]*/       "Proud",
+      grateful:    /*[[#{mood.sub.grateful}]]*/    "Grateful",
+      energetic:   /*[[#{mood.sub.energetic}]]*/   "Energetic",
+      excited:     /*[[#{mood.sub.excited}]]*/     "Excited",
+      fulfilled:   /*[[#{mood.sub.fulfilled}]]*/   "Fulfilled",
+      calm:        /*[[#{mood.sub.calm}]]*/        "Calm",
+      productive:  /*[[#{mood.sub.productive}]]*/  "Productive",
+      hopeful:     /*[[#{mood.sub.hopeful}]]*/     "Hopeful",
+      motivated:   /*[[#{mood.sub.motivated}]]*/   "Motivated",
+      friendly:    /*[[#{mood.sub.friendly}]]*/    "Friendly",
+      indifferent: /*[[#{mood.sub.indifferent}]]*/ "Indifferent",
+      blank:       /*[[#{mood.sub.blank}]]*/       "Blank",
+      tired:       /*[[#{mood.sub.tired}]]*/       "Tired",
+      bored:       /*[[#{mood.sub.bored}]]*/       "Bored",
+      quiet:       /*[[#{mood.sub.quiet}]]*/       "Quiet",
+      frustrated:  /*[[#{mood.sub.frustrated}]]*/  "Frustrated",
+      overwhelmed: /*[[#{mood.sub.overwhelmed}]]*/ "Overwhelmed",
+      nervous:     /*[[#{mood.sub.nervous}]]*/     "Nervous",
+      insecure:    /*[[#{mood.sub.insecure}]]*/    "Insecure",
+      confused:    /*[[#{mood.sub.confused}]]*/    "Confused",
+      angry:       /*[[#{mood.sub.angry}]]*/       "Angry",
+      sad:         /*[[#{mood.sub.sad}]]*/         "Sad",
+      lonely:      /*[[#{mood.sub.lonely}]]*/      "Lonely",
+      anxious:     /*[[#{mood.sub.anxious}]]*/     "Anxious",
+      hopeless:    /*[[#{mood.sub.hopeless}]]*/    "Hopeless"
+    };
 
     const CUR_LANG=(new URLSearchParams(location.search).get('lang'))||/*[[${L}]]*/'en';
     function switchLang(lang){const u=new URL(location.href);u.searchParams.set('lang',lang);location.href=u.toString();}
@@ -107,13 +135,10 @@
       document.querySelectorAll('a[href^="/"],a[href^="./"],a[href^="../"]').forEach(a=>{
         try{const u=new URL(a.href,location.origin);if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}}catch{}
       });
-      document.querySelectorAll('form').forEach(f=>{
-        if(!f.querySelector('input[name="lang"]')){ const i=document.createElement('input'); i.type='hidden'; i.name='lang'; i.value=CUR_LANG; f.appendChild(i); }
-      });
     });
 </script>
 
-<!-- Page logic -->
+<!-- Page logic (uses SUBMOOD_LABELS) -->
 <script th:src="@{/js/statistics.js}" src="/js/statistics.js"></script>
 </body>
 </html>
