@@ -1,0 +1,64 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs & editors
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+
+# Java / JVM
+# Build outputs
+ target/
+ build/
+ out/
+
+# Gradle
+.gradle/
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.properties
+
+# Maven
+.mvn/
+!**/.mvn/wrapper/maven-wrapper.jar
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# Node / JavaScript
+node_modules/
+dist/
+.next/
+.nuxt/
+.cache/
+coverage/
+.nyc_output/
+storybook-static/
+*.tsbuildinfo
+
+# Package manager logs & stores
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store
+
+# Logs
+*.log
+logs/
+
+# Env & secrets — never commit these
+.env
+.env.*
+*.env
+*.local
+
+# Docker (optional overrides & local files)
+docker-compose.override.yml
+.docker/
