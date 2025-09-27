@@ -6,31 +6,33 @@
     <title th:text="#{app.title}">Mental Health Support</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css">
-    <style>
-        .lang-switch{position:sticky;top:0;z-index:60;display:flex;gap:8px;justify-content:flex-end;padding:10px}
-        .lang-switch a{background:#1c2230;color:#fff;border:1px solid var(--ios-separator);border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer;text-decoration:none}
-        .lang-switch a.active{background:var(--ios-blue)}
-        .submood-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-        .submood-buttons button{padding:6px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);cursor:pointer}
-    </style>
+    <!-- Utility class for JS-driven visibility -->
+    <style>.hidden{display:none!important}</style>
 </head>
-<body>
+<body class="theme-sketch">
 <nav class="lang-switch" role="navigation" aria-label="Language">
     <a th:href="@{/index(lang='en')}" th:classappend="${#locale.language}=='en' ? ' active' : ''">EN</a>
     <a th:href="@{/index(lang='ko')}" th:classappend="${#locale.language}=='ko' ? ' active' : ''">한국어</a>
     <a th:href="@{/index(lang='ru')}" th:classappend="${#locale.language}=='ru' ? ' active' : ''">RU</a>
 </nav>
 
+<!-- Optional mobile tabs (JS activates automatically if present) -->
+<nav id="mobile-tabs" class="hidden" role="tablist" aria-label="Sections">
+    <button class="mobile-tab stylish-btn" data-tab="mood" aria-selected="true" type="button">Mood</button>
+    <button class="mobile-tab stylish-btn" data-tab="journal" aria-selected="false" type="button">Journal</button>
+    <button class="mobile-tab stylish-btn" data-tab="chat" aria-selected="false" type="button">Chat</button>
+</nav>
+
 <main class="container three-column-layout">
     <!-- Mood Tracker -->
-    <section id="mood-tracker" class="section mood-tracker">
-        <h2 th:text="#{mood.tracker}">Mood Tracker</h2>
+    <section id="mood-tracker" class="section mood-tracker" aria-labelledby="mood-tracker-title">
+        <h2 id="mood-tracker-title" th:text="#{mood.tracker}">Mood Tracker</h2>
         <div class="today-date" id="current-date" th:text="#{mood.today} + ' '">Today:</div>
 
         <div class="calendar-controls">
-            <button class="stylish-btn" id="prev-month">◀</button>
-            <span id="current-month">—</span>
-            <button class="stylish-btn" id="next-month">▶</button>
+            <button class="stylish-btn" id="prev-month" aria-label="Previous month" type="button">◀</button>
+            <span id="current-month" data-year="" data-month="">—</span>
+            <button class="stylish-btn" id="next-month" aria-label="Next month" type="button">▶</button>
         </div>
 
         <div class="calendar-responsive-wrapper">
@@ -38,46 +40,45 @@
                 <div class="calendar-weekdays">
                     <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span class="sunday">Sun</span>
                 </div>
-                <div id="calendar"></div>
+                <div id="calendar" aria-label="Monthly calendar"></div>
             </div>
         </div>
 
         <div id="emotion-buttons" class="emotion-buttons one-row">
-            <button class="mood-btn bad"     onclick="showSubMoodButtons('bad')">😞 <span th:text="#{mood.bad}">Bad</span></button>
-            <button class="mood-btn poor"    onclick="showSubMoodButtons('poor')">😕 <span th:text="#{mood.poor}">Poor</span></button>
-            <button class="mood-btn neutral" onclick="showSubMoodButtons('neutral')">😐 <span th:text="#{mood.neutral}">Neutral</span></button>
-            <button class="mood-btn good"    onclick="showSubMoodButtons('good')">🙂 <span th:text="#{mood.good}">Good</span></button>
-            <button class="mood-btn best"    onclick="showSubMoodButtons('best')">😃 <span th:text="#{mood.best}">Best</span></button>
+            <button class="mood-btn bad"     type="button" onclick="showSubMoodButtons('bad')">😞 <span th:text="#{mood.bad}">Bad</span></button>
+            <button class="mood-btn poor"    type="button" onclick="showSubMoodButtons('poor')">😕 <span th:text="#{mood.poor}">Poor</span></button>
+            <button class="mood-btn neutral" type="button" onclick="showSubMoodButtons('neutral')">😐 <span th:text="#{mood.neutral}">Neutral</span></button>
+            <button class="mood-btn good"    type="button" onclick="showSubMoodButtons('good')">🙂 <span th:text="#{mood.good}">Good</span></button>
+            <button class="mood-btn best"    type="button" onclick="showSubMoodButtons('best')">😃 <span th:text="#{mood.best}">Best</span></button>
         </div>
 
-        <!-- Optional SSR submood list (will be relabeled too) -->
         <div id="submood-buttons-container">
             <div id="submood-buttons" class="submood-buttons">
-                <button data-code="proud"        th:text="#{mood.sub.proud}">Proud</button>
-                <button data-code="grateful"     th:text="#{mood.sub.grateful}">Grateful</button>
-                <button data-code="energetic"    th:text="#{mood.sub.energetic}">Energetic</button>
-                <button data-code="excited"      th:text="#{mood.sub.excited}">Excited</button>
-                <button data-code="fulfilled"    th:text="#{mood.sub.fulfilled}">Fulfilled</button>
-                <button data-code="calm"         th:text="#{mood.sub.calm}">Calm</button>
-                <button data-code="productive"   th:text="#{mood.sub.productive}">Productive</button>
-                <button data-code="hopeful"      th:text="#{mood.sub.hopeful}">Hopeful</button>
-                <button data-code="motivated"    th:text="#{mood.sub.motivated}">Motivated</button>
-                <button data-code="friendly"     th:text="#{mood.sub.friendly}">Friendly</button>
-                <button data-code="indifferent"  th:text="#{mood.sub.indifferent}">Indifferent</button>
-                <button data-code="blank"        th:text="#{mood.sub.blank}">Blank</button>
-                <button data-code="tired"        th:text="#{mood.sub.tired}">Tired</button>
-                <button data-code="bored"        th:text="#{mood.sub.bored}">Bored</button>
-                <button data-code="quiet"        th:text="#{mood.sub.quiet}">Quiet</button>
-                <button data-code="frustrated"   th:text="#{mood.sub.frustrated}">Frustrated</button>
-                <button data-code="overwhelmed"  th:text="#{mood.sub.overwhelmed}">Overwhelmed</button>
-                <button data-code="nervous"      th:text="#{mood.sub.nervous}">Nervous</button>
-                <button data-code="insecure"     th:text="#{mood.sub.insecure}">Insecure</button>
-                <button data-code="confused"     th:text="#{mood.sub.confused}">Confused</button>
-                <button data-code="angry"        th:text="#{mood.sub.angry}">Angry</button>
-                <button data-code="sad"          th:text="#{mood.sub.sad}">Sad</button>
-                <button data-code="lonely"       th:text="#{mood.sub.lonely}">Lonely</button>
-                <button data-code="anxious"      th:text="#{mood.sub.anxious}">Anxious</button>
-                <button data-code="hopeless"     th:text="#{mood.sub.hopeless}">Hopeless</button>
+                <button class="submood-btn" type="button" data-code="proud"        th:text="#{mood.sub.proud}">Proud</button>
+                <button class="submood-btn" type="button" data-code="grateful"     th:text="#{mood.sub.grateful}">Grateful</button>
+                <button class="submood-btn" type="button" data-code="energetic"    th:text="#{mood.sub.energetic}">Energetic</button>
+                <button class="submood-btn" type="button" data-code="excited"      th:text="#{mood.sub.excited}">Excited</button>
+                <button class="submood-btn" type="button" data-code="fulfilled"    th:text="#{mood.sub.fulfilled}">Fulfilled</button>
+                <button class="submood-btn" type="button" data-code="calm"         th:text="#{mood.sub.calm}">Calm</button>
+                <button class="submood-btn" type="button" data-code="productive"   th:text="#{mood.sub.productive}">Productive</button>
+                <button class="submood-btn" type="button" data-code="hopeful"      th:text="#{mood.sub.hopeful}">Hopeful</button>
+                <button class="submood-btn" type="button" data-code="motivated"    th:text="#{mood.sub.motivated}">Motivated</button>
+                <button class="submood-btn" type="button" data-code="friendly"     th:text="#{mood.sub.friendly}">Friendly</button>
+                <button class="submood-btn" type="button" data-code="indifferent"  th:text="#{mood.sub.indifferent}">Indifferent</button>
+                <button class="submood-btn" type="button" data-code="blank"        th:text="#{mood.sub.blank}">Blank</button>
+                <button class="submood-btn" type="button" data-code="tired"        th:text="#{mood.sub.tired}">Tired</button>
+                <button class="submood-btn" type="button" data-code="bored"        th:text="#{mood.sub.bored}">Bored</button>
+                <button class="submood-btn" type="button" data-code="quiet"        th:text="#{mood.sub.quiet}">Quiet</button>
+                <button class="submood-btn" type="button" data-code="frustrated"   th:text="#{mood.sub.frustrated}">Frustrated</button>
+                <button class="submood-btn" type="button" data-code="overwhelmed"  th:text="#{mood.sub.overwhelmed}">Overwhelmed</button>
+                <button class="submood-btn" type="button" data-code="nervous"      th:text="#{mood.sub.nervous}">Nervous</button>
+                <button class="submood-btn" type="button" data-code="insecure"     th:text="#{mood.sub.insecure}">Insecure</button>
+                <button class="submood-btn" type="button" data-code="confused"     th:text="#{mood.sub.confused}">Confused</button>
+                <button class="submood-btn" type="button" data-code="angry"        th:text="#{mood.sub.angry}">Angry</button>
+                <button class="submood-btn" type="button" data-code="sad"          th:text="#{mood.sub.sad}">Sad</button>
+                <button class="submood-btn" type="button" data-code="lonely"       th:text="#{mood.sub.lonely}">Lonely</button>
+                <button class="submood-btn" type="button" data-code="anxious"      th:text="#{mood.sub.anxious}">Anxious</button>
+                <button class="submood-btn" type="button" data-code="hopeless"     th:text="#{mood.sub.hopeless}">Hopeless</button>
             </div>
         </div>
 
@@ -87,18 +88,13 @@
     </section>
 
     <!-- Journaling -->
-    <section id="journaling" class="section journaling">
-        <h2 th:text="#{journaling.title}">Journaling</h2>
+    <section id="journaling" class="section journaling" aria-labelledby="journaling-title">
+        <h2 id="journaling-title" th:text="#{journaling.title}">Journaling</h2>
         <form id="new-note-form" novalidate>
-            <label for="note-content" th:text="#{journaling.title}">Journaling</label>
-            <textarea id="note-content"
-                      name="content"
-                      required
-                      th:placeholder="#{journaling.placeholder}"
-                      placeholder="Write your note here..."></textarea>
+            <textarea id="note-content" name="content" required th:placeholder="#{journaling.placeholder}" placeholder="Write your note here..."></textarea>
             <label for="note-date" th:text="#{journaling.date}">Date:</label>
             <input type="date" id="note-date" name="date" required />
-            <button type="submit" class="stylish-btn" data-variant="success" th:text="#{journaling.save}">Save Note</button>
+            <button type="submit" class="stylish-btn" data-variant="accent" th:text="#{journaling.save}">Save Note</button>
         </form>
         <div class="note">
             <a th:href="@{/notes(lang=${#locale.language})}" class="stylish-btn" data-variant="gray" th:text="#{nav.viewAllNotes}">View all notes</a>
@@ -106,20 +102,20 @@
     </section>
 
     <!-- Chat -->
-    <section id="chat-section" class="section chat-section">
-        <h2 th:text="#{chat.title}">Mind Chat Bot</h2>
-        <div class="chat-greeting" th:text="#{chat.greeting}">👋 Welcome! Start chatting with your AI friend.</div>
+    <section id="chat-section" class="section chat-section" aria-labelledby="chat-section-title">
+        <h2 id="chat-section-title" th:text="#{chat.title}">Mind Chat Bot</h2>
         <div class="chat-box" id="chat-box">
-            <div class="messages" id="messages"></div>
+            <div class="messages" id="messages"
+                 role="log" aria-live="polite" aria-relevant="additions text"></div>
             <div class="input-area">
-                <input type="text" id="user-input" th:placeholder="#{chat.inputPlaceholder}" autocomplete="off">
-                <button id="send-btn" type="button" class="stylish-btn" th:text="#{chat.send}">Send</button>
+                <input type="text" id="user-input" th:placeholder="#{chat.inputPlaceholder}" placeholder="Type a message..." autocomplete="off">
+                <button id="send-btn" type="button" class="stylish-btn" data-variant="accent" th:text="#{chat.send}">Send</button>
             </div>
             <div class="chat-actions">
                 <form th:action="@{/logout}" method="post">
                     <button type="submit" class="stylish-btn" data-variant="gray" th:text="#{buttons.logout}">Logout</button>
                 </form>
-                <a th:href="@{/home(lang=${#locale.language})}" class="stylish-btn" data-variant="success" th:text="#{buttons.profile}">My Profile</a>
+                <a th:href="@{/home(lang=${#locale.language})}" class="stylish-btn" data-variant="accent" th:text="#{buttons.profile}">My Profile</a>
             </div>
         </div>
     </section>
@@ -156,24 +152,41 @@
     });
 </script>
 
-<!-- 2) Load app script; it will now find the localized keys -->
-<script th:src="@{/js/script.js?v=7}" defer></script>
+<!-- 2) Load app script -->
+<script th:src="@{/js/script.js?v=9}" src="/js/script.js?v=9" defer></script>
 
-<!-- 3) (Optional) relabel any server-rendered buttons on first load -->
+<!-- 3) Relabel SSR buttons on first load + colorize submood buttons (locale-agnostic by data-code) -->
 <script defer>
     document.addEventListener('DOMContentLoaded', () => {
       const labels = window.I18N || {};
-      document.querySelectorAll('#submood-buttons [data-code]').forEach(btn=>{
+      document.querySelectorAll('#submood-buttons [data-code]').forEach(btn => {
         const code = btn.dataset.code;
-        const k = 'mood.sub.' + code;
-        const lbl = labels[k];
-        if (!lbl) return;
-        const chip = btn.querySelector('span');
-        btn.textContent = lbl;
-        if (chip) btn.appendChild(chip);
+        const lbl = labels['mood.sub.' + code];
+        if (lbl) btn.textContent = lbl;
+        btn.classList.add('submood-btn');
       });
+
+      if (window.showSubMoodButtons) {
+        const _orig = window.showSubMoodButtons;
+        window.showSubMoodButtons = function (mainMood) {
+          _orig(mainMood);
+          const colorMap = (window.MOOD_COLOR_MAP || {})[mainMood] || {};
+          document.querySelectorAll('#submood-buttons [data-code]').forEach(b => {
+            const code = b.dataset.code;
+            const color = colorMap[code];
+            if (color) {
+              b.style.background = color;          /* color allowed for submoods */
+              b.style.color = '#fff';
+              b.style.borderColor = 'rgba(0,0,0,.15)';
+            } else {
+              b.style.background = '';
+              b.style.color = '';
+              b.style.borderColor = '';
+            }
+          });
+        };
+      }
     });
 </script>
-
 </body>
 </html>

@@ -25,7 +25,6 @@ spring:
 
 openai:
   api:
-    # read from env if set
   model: gpt-4o-mini           # use whatever your service expects
   system:
     prompt: |

@@ -5,36 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title th:text="#{stats.title}">Mood Statistics</title>
 
+    <!-- main app theme first, then page-specific styles -->
     <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css"/>
-    <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css"/>
-
-    <style>
-        .page-center{min-height:100dvh;display:grid;place-items:center;padding:clamp(12px,3vw,32px)}
-        .section.wide{max-width:1100px;width:100%}
-        .charts{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
-        .chart-block{flex:1 1 auto}
-        .pie-block{max-width:520px}
-        .lines-block{max-width:900px;width:100%}
-
-        canvas{background:transparent;border:1px solid var(--ios-separator);border-radius:16px;padding:8px;max-width:100%}
-        #subMoodChartsContainer{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
-        #subMoodChartsContainer .mini{width:260px}
-        .mini h4{margin:0 0 8px 0;text-align:center;font-weight:800}
-
-        .month-toolbar{display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 10px}
-        .month-label{font-weight:800;font-size:15px;color:var(--ios-text);padding:6px 10px;background:#1c2230;border:1px solid var(--ios-separator);border-radius:10px}
-
-        .stylish-btn{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;line-height:1.2;text-indent:0}
-        .stylish-btn .sr-only{position:static;clip:auto;width:auto;height:auto;overflow:visible}
-
-        .lang-switch{position:sticky;top:0;z-index:60;display:flex;gap:8px;justify-content:flex-end;padding:10px}
-        .lang-switch button{background:#1c2230;color:#fff;border:1px solid var(--ios-separator);border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer}
-        .lang-switch button.active{background:var(--ios-blue)}
-        .sec-title{margin:12px 0 8px 0;text-align:center;font-weight:800}
-    </style>
+    <link rel="stylesheet" th:href="@{/css/statistics.css}" href="/css/statistics.css"/>
 </head>
-<body class="bg-grad-purple"
-      th:with="L=${#lists.isEmpty(param.lang) ? #locale.language : param.lang[0]}">
+<body th:with="L=${#lists.isEmpty(param.lang) ? #locale.language : param.lang[0]}">
 
 <nav class="lang-switch" role="navigation" aria-label="Language">
     <button id="lang-en" onclick="switchLang('en')">EN</button>
@@ -46,14 +21,13 @@
     <section class="section wide">
         <h2 style="text-align:center" th:text="#{stats.title}">Mood Statistics</h2>
 
-        <!-- 1) Monthly line first -->
         <h3 class="sec-title" th:text="#{stats.dailyMood}">Moods by Date</h3>
         <div class="charts">
             <div class="chart-block lines-block">
                 <div class="month-toolbar">
-                    <button class="stylish-btn" id="prevMonth" aria-label="Previous month" th:text="#{stats.prev}">⟵ Prev</button>
+                    <button class="stylish-btn" id="prevMonth" th:text="#{stats.prev}" aria-label="Previous month">⟵ Prev</button>
                     <span id="monthLabel" class="month-label">—</span>
-                    <button class="stylish-btn" id="nextMonth" aria-label="Next month" th:text="#{stats.next}">Next ⟶</button>
+                    <button class="stylish-btn" id="nextMonth" th:text="#{stats.next}" aria-label="Next month">Next ⟶</button>
                     <button class="stylish-btn" id="thisMonth" data-variant="gray" th:text="#{stats.thisMonth}">This Month</button>
                 </div>
                 <canvas id="moodMonthlyLines" height="280"></canvas>
@@ -62,7 +36,6 @@
             </div>
         </div>
 
-        <!-- 2) Main distribution pie -->
         <h3 class="sec-title" th:text="#{stats.mainPieTitle}">Main Mood Distribution</h3>
         <div class="charts">
             <div class="chart-block pie-block">
@@ -70,22 +43,22 @@
             </div>
         </div>
 
-        <!-- 3) Submood pies -->
         <h3 class="sec-title" th:text="#{stats.subPieTitle}">Submood Breakdown</h3>
         <div id="subMoodChartsContainer"></div>
 
         <div style="margin-top:14px;text-align:center">
             <a class="stylish-btn" data-variant="gray"
-               th:href="@{/index(lang=${L})}" href="/index">← <span th:text="#{nav.backMain}">Back to Main</span></a>
+               th:href="@{/index(lang=${L})}" href="/index"> <span th:text="#{nav.backMain}">Back to Main</span></a>
         </div>
     </section>
 </main>
-<!-- Chart libs -->
+
+<!-- libs -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/date-fns@3"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
 
-<!-- i18n strings for JS -->
+<!-- i18n bootstrap -->
 <script th:inline="javascript">
     window.I18N = Object.assign({}, window.I18N || {}, {
       mood_bad:     /*[[#{mood.bad}]]*/     'Bad',
@@ -93,38 +66,24 @@
       mood_neutral: /*[[#{mood.neutral}]]*/ 'Neutral',
       mood_good:    /*[[#{mood.good}]]*/    'Good',
       mood_best:    /*[[#{mood.best}]]*/    'Best',
-      stats_mainPieTitle:      /*[[#{stats.mainPieTitle}]]*/ 'Main Mood Distribution',
-      stats_subPieTitle:       /*[[#{stats.subPieTitle}]]*/  'Submood Breakdown',
-      stats_dailyMoodTitle:    /*[[#{stats.dailyMood}]]*/    'Moods by Date (selected month)'
+      stats_mainPieTitle:   /*[[#{stats.mainPieTitle}]]*/ 'Main Mood Distribution',
+      stats_subPieTitle:    /*[[#{stats.subPieTitle}]]*/  'Submood Breakdown',
+      stats_dailyMoodTitle: /*[[#{stats.dailyMood}]]*/    'Moods by Date (selected month)'
     });
-
-    /* ✅ Localized submood labels for legends & tooltips */
     window.SUBMOOD_LABELS = {
-      proud:       /*[[#{mood.sub.proud}]]*/       "Proud",
-      grateful:    /*[[#{mood.sub.grateful}]]*/    "Grateful",
-      energetic:   /*[[#{mood.sub.energetic}]]*/   "Energetic",
-      excited:     /*[[#{mood.sub.excited}]]*/     "Excited",
-      fulfilled:   /*[[#{mood.sub.fulfilled}]]*/   "Fulfilled",
-      calm:        /*[[#{mood.sub.calm}]]*/        "Calm",
-      productive:  /*[[#{mood.sub.productive}]]*/  "Productive",
-      hopeful:     /*[[#{mood.sub.hopeful}]]*/     "Hopeful",
-      motivated:   /*[[#{mood.sub.motivated}]]*/   "Motivated",
-      friendly:    /*[[#{mood.sub.friendly}]]*/    "Friendly",
-      indifferent: /*[[#{mood.sub.indifferent}]]*/ "Indifferent",
-      blank:       /*[[#{mood.sub.blank}]]*/       "Blank",
-      tired:       /*[[#{mood.sub.tired}]]*/       "Tired",
-      bored:       /*[[#{mood.sub.bored}]]*/       "Bored",
-      quiet:       /*[[#{mood.sub.quiet}]]*/       "Quiet",
-      frustrated:  /*[[#{mood.sub.frustrated}]]*/  "Frustrated",
-      overwhelmed: /*[[#{mood.sub.overwhelmed}]]*/ "Overwhelmed",
-      nervous:     /*[[#{mood.sub.nervous}]]*/     "Nervous",
-      insecure:    /*[[#{mood.sub.insecure}]]*/    "Insecure",
-      confused:    /*[[#{mood.sub.confused}]]*/    "Confused",
-      angry:       /*[[#{mood.sub.angry}]]*/       "Angry",
-      sad:         /*[[#{mood.sub.sad}]]*/         "Sad",
-      lonely:      /*[[#{mood.sub.lonely}]]*/      "Lonely",
-      anxious:     /*[[#{mood.sub.anxious}]]*/     "Anxious",
-      hopeless:    /*[[#{mood.sub.hopeless}]]*/    "Hopeless"
+      proud:/*[[#{mood.sub.proud}]]*/"Proud", grateful:/*[[#{mood.sub.grateful}]]*/"Grateful",
+      energetic:/*[[#{mood.sub.energetic}]]*/"Energetic", excited:/*[[#{mood.sub.excited}]]*/"Excited",
+      fulfilled:/*[[#{mood.sub.fulfilled}]]*/"Fulfilled", calm:/*[[#{mood.sub.calm}]]*/"Calm",
+      productive:/*[[#{mood.sub.productive}]]*/"Productive", hopeful:/*[[#{mood.sub.hopeful}]]*/"Hopeful",
+      motivated:/*[[#{mood.sub.motivated}]]*/"Motivated", friendly:/*[[#{mood.sub.friendly}]]*/"Friendly",
+      indifferent:/*[[#{mood.sub.indifferent}]]*/"Indifferent", blank:/*[[#{mood.sub.blank}]]*/"Blank",
+      tired:/*[[#{mood.sub.tired}]]*/"Tired", bored:/*[[#{mood.sub.bored}]]*/"Bored",
+      quiet:/*[[#{mood.sub.quiet}]]*/"Quiet", frustrated:/*[[#{mood.sub.frustrated}]]*/"Frustrated",
+      overwhelmed:/*[[#{mood.sub.overwhelmed}]]*/"Overwhelmed", nervous:/*[[#{mood.sub.nervous}]]*/"Nervous",
+      insecure:/*[[#{mood.sub.insecure}]]*/"Insecure", confused:/*[[#{mood.sub.confused}]]*/"Confused",
+      angry:/*[[#{mood.sub.angry}]]*/"Angry", sad:/*[[#{mood.sub.sad}]]*/"Sad",
+      lonely:/*[[#{mood.sub.lonely}]]*/"Lonely", anxious:/*[[#{mood.sub.anxious}]]*/"Anxious",
+      hopeless:/*[[#{mood.sub.hopeless}]]*/"Hopeless"
     };
 
     const CUR_LANG=(new URLSearchParams(location.search).get('lang'))||/*[[${L}]]*/'en';
@@ -133,12 +92,13 @@
       document.getElementById('lang-'+CUR_LANG)?.classList.add('active');
       document.documentElement.lang = CUR_LANG;
       document.querySelectorAll('a[href^="/"],a[href^="./"],a[href^="../"]').forEach(a=>{
-        try{const u=new URL(a.href,location.origin);if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}}catch{}
+        try{const u=new URL(a.href,location.origin);
+          if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}
+        }catch{}
       });
     });
 </script>
 
-<!-- Page logic (uses SUBMOOD_LABELS) -->
 <script th:src="@{/js/statistics.js}" src="/js/statistics.js"></script>
 </body>
 </html>

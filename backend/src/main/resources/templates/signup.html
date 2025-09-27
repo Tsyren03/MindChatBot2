@@ -4,23 +4,8 @@
     <meta charset="UTF-8" />
     <title>회원 가입</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Favicons -->
-    <link rel="icon" th:href="@{/icons/favicon.ico?v=3}" href="/icons/favicon.ico?v=3">
-    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/icons/favicon-32.png?v=3}" href="/icons/favicon-32.png?v=3">
-    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/icons/favicon-16.png?v=3}" href="/icons/favicon-16.png?v=3">
-    <link rel="apple-touch-icon" th:href="@{/icons/apple-touch-icon.png?v=3}" href="/icons/apple-touch-icon.png?v=3">
-    <meta name="theme-color" content="#0b0e23">
-
-    <!-- Windows tile -->
-    <meta name="msapplication-TileImage" content="/icons/mstile-150x150.png">
-    <meta name="msapplication-TileColor" content="#0b0e23">
-
-    <!-- PWA manifest -->
-    <link rel="manifest" th:href="@{/icons/site.webmanifest?v=3}" href="/icons/site.webmanifest?v=3">
-
-    <!-- Bootstrap 4.6 -->
+    <!-- icons/manifest + Bootstrap… -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"/>
-    <!-- Auth styles -->
     <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css" />
 </head>
 <body class="bg-grad-peach">
@@ -42,24 +27,20 @@
 
                 <div class="form-group">
                     <label for="signup-email" class="form-label">이메일</label>
-                    <input id="signup-email" name="email" type="email"
-                           class="form-control" placeholder="name@example.com"
-                           required autocapitalize="none" autocomplete="username" spellcheck="false" />
+                    <input id="signup-email" name="email" type="email" class="form-control"
+                           placeholder="name@example.com" required
+                           autocapitalize="none" autocomplete="username" spellcheck="false" />
                     <div class="invalid-feedback">유효한 이메일을 입력하세요.</div>
                 </div>
 
                 <div class="form-group">
                     <label for="signup-password" class="form-label">비밀번호</label>
                     <div class="input-affix">
-                        <input id="signup-password" name="password" type="password"
-                               class="form-control" placeholder="최소 8자"
-                               minlength="8" required autocomplete="new-password" />
-                        <button type="button"
-                                class="toggle-eye"
-                                data-toggle="password"
-                                data-target="signup-password"
-                                aria-label="비밀번호 표시"
-                                aria-pressed="false">👁️</button>
+                        <input id="signup-password" name="password" type="password" class="form-control"
+                               placeholder="최소 8자" minlength="8" required autocomplete="new-password" />
+                        <button type="button" class="toggle-eye"
+                                data-toggle="password" data-target="signup-password"
+                                aria-label="비밀번호 표시" aria-pressed="false">👁️</button>
                     </div>
                     <div class="invalid-feedback">8자 이상 비밀번호를 입력하세요.</div>
                 </div>
@@ -74,7 +55,6 @@
     </div>
 </section>
 
-<!-- Password toggle script -->
 <script th:src="@{/js/auth.js}" src="/js/auth.js" defer></script>
 </body>
 </html>

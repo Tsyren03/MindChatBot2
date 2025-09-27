@@ -1,174 +1,381 @@
-/* =========================
-   iOS-like Auth Theme
-   ========================= */
+/* ========================================================================
+   AUTH THEME (pastel pencil style) — login & signup
+   Compatible with: Bootstrap 4.6 + your auth.js
+   ======================================================================== */
+
+/* -------------------- TOKENS -------------------- */
 :root{
-  --bg-1:#0f1020;
-  --text:#e9eef6;
-  --muted:#9fb0c6;
-  --surface:rgba(20,24,34,.82);
-  --border:rgba(255,255,255,.08);
-  --brand:#6a11cb;
-  --brand2:#2575fc;
-  --success:#34C759;
-  --danger:#FF3B30;
-  --focus:rgba(37,117,252,.38);
-  --radius:16px;
-  --shadow:0 20px 50px rgba(0,0,0,.45);
+  /* Paper & ink */
+  --paper:#FAF9F6;
+  --card:#FFFFFF;
+  --ink:#1A1A1A;      /* softer than pure black */
+  --ink-2:#343434;
+  --ink-3:#8A8A8A;
+
+  /* Lines (lighter gray instead of black) */
+  --line:#9A9AA1;     /* main outline */
+  --line-soft:#E2E3E8;/* separators & light frames */
+
+  /* Focus ring */
+  --focus:rgba(0,0,0,.18);
+
+  /* Pencil shadows & emboss */
+  --pencil-shadow:0 2px 0 rgba(0,0,0,.05), 0 6px 14px rgba(0,0,0,.05);
+  --pencil-emboss:inset 0 1px 0 rgba(0,0,0,.05);
+
+  /* Button lines + hatching (lighter) */
+  --btn-line:#9C9C9C;
+  --btn-line-hover:#8C8C8C;
+  --btn-line-active:#7B7B7B;
+  --btn-hatch-1:radial-gradient(rgba(0,0,0,.025) 1px, transparent 1.2px) 0 0/6px 6px;
+  --btn-hatch-2:radial-gradient(rgba(0,0,0,.018) 1px, transparent 1.4px) 2px 2px/8px 8px;
+
+  /* Pastel accents for validation */
+  --ok:#CFEFD9;       /* soft green */
+  --warn:#FFE4B8;     /* soft orange */
+  --error:#FFCACA;    /* soft red */
 }
 
+/* -------------------- BASE & TYPOGRAPHY -------------------- */
+*{box-sizing:border-box}
 html,body{height:100%}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter","Noto Sans KR",system-ui,Arial,sans-serif;
-  background: var(--bg-1);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter","Noto Sans KR","Noto Sans","Segoe UI",system-ui,Arial,sans-serif;
+  margin:0;
+  color:var(--ink);
+  background:
+    radial-gradient(rgba(0,0,0,.025) 1px, transparent 1px) 0 0/8px 8px,
+    radial-gradient(rgba(0,0,0,.02) 1px, transparent 1px) 4px 4px/8px 8px,
+    var(--paper);
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
 }
 
-/* Background gradients (pick one per page) */
+/* Language-aware stacks */
+html:lang(ko) body{
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Inter",system-ui,Arial,sans-serif;
+  letter-spacing:0;
+}
+html:lang(ru) body{
+  font-family:-apple-system,BlinkMacSystemFont,"Inter","Rubik","Noto Sans","Segoe UI",system-ui,Arial,sans-serif;
+}
+
+/* Optional background helpers (used in your HTML) */
 .bg-grad-purple{
   background:
-    radial-gradient(800px 800px at 10% 10%, rgba(106,17,203,.28), transparent 60%),
-    radial-gradient(700px 700px at 90% 80%, rgba(37,117,252,.28), transparent 55%),
-    linear-gradient(120deg,#0b0e23,#0a1330 30%,#08162b);
+    radial-gradient(1200px 600px at 20% -10%, #E4E0FF 0%, transparent 60%),
+    radial-gradient(1000px 600px at 120% 120%, #FDE2FF 0%, transparent 55%),
+    radial-gradient(rgba(0,0,0,.025) 1px, transparent 1px) 0 0/8px 8px,
+    radial-gradient(rgba(0,0,0,.02) 1px, transparent 1px) 4px 4px/8px 8px,
+    var(--paper) !important;
 }
 .bg-grad-peach{
   background:
-    radial-gradient(900px 900px at 10% 20%, rgba(255,153,102,.25), transparent 60%),
-    radial-gradient(800px 800px at 85% 80%, rgba(229,193,197,.28), transparent 55%),
-    linear-gradient(120deg,#0b0e23,#23131b 30%,#2b1720);
+    radial-gradient(1200px 600px at 0% 0%, #FFEADB 0%, transparent 60%),
+    radial-gradient(900px 600px at 110% 100%, #FFF3D6 0%, transparent 55%),
+    radial-gradient(rgba(0,0,0,.025) 1px, transparent 1px) 0 0/8px 8px,
+    radial-gradient(rgba(0,0,0,.02) 1px, transparent 1px) 4px 4px/8px 8px,
+    var(--paper) !important;
 }
 
-/* Layout */
+/* -------------------- LAYOUT -------------------- */
 .auth-page{
   min-height:100dvh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
+  display:grid;
+  place-items:center;
+  padding:clamp(16px,3vw,28px);
 }
-
-/* Card */
 .auth-card{
-  width:min(720px, 92vw);
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:24px;
-  box-shadow:var(--shadow);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  width:min(720px, 96vw);
+  max-width:520px;
+  border-radius:22px;
+  background:var(--card);
+  border:2px solid var(--line);
+  box-shadow:var(--pencil-shadow);
+  animation:paper-pop .38s cubic-bezier(.2,.8,.2,1) both;
+  position:relative;
+}
+.auth-card::before{
+  content:""; position:absolute; inset:0; border-radius:22px; pointer-events:none;
+  background:
+    radial-gradient(rgba(0,0,0,.012) .8px, transparent 1.2px) 0 0/7px 7px,
+    radial-gradient(rgba(0,0,0,.01) .8px, transparent 1.2px) 3px 4px/9px 9px;
+  opacity:.45; mix-blend-mode:multiply;
+}
+.auth-card::after{
+  content:""; position:absolute; inset:8px; border-radius:18px;
+  border:1.5px dashed rgba(0,0,0,.16); pointer-events:none;
+  animation:sketch-wiggle 3.8s ease-in-out infinite;
 }
 
-/* Header area */
-.auth-head{
-  display:flex; align-items:center; gap:14px; margin-bottom:8px;
-}
+/* -------------------- HEADER -------------------- */
+.auth-head{ display:flex; align-items:center; gap:12px; }
 .brand-badge{
-  width:56px; height:56px; border-radius:50%;
-  background:linear-gradient(135deg,var(--brand),var(--brand2));
-  box-shadow:0 12px 26px rgba(37,117,252,.35);
+  width:44px; height:44px; border-radius:12px; display:grid; place-items:center;
+  background:#fff; border:2px solid var(--line); box-shadow:var(--pencil-shadow);
+  position:relative; overflow:hidden;
 }
-.auth-title{font-weight:800; letter-spacing:.2px; margin:0}
-.auth-sub{color:var(--muted); margin:2px 0 0 0}
-
-/* Form */
-.form-label{font-weight:700; color:#d9e1ef}
-.form-control{
-  background: rgba(255,255,255,.06);
-  border:1px solid var(--border);
-  color:var(--text);
-  border-radius:12px;
-  padding:12px 14px;
+.brand-badge::after{
+  content:""; position:absolute; inset:3px; border-radius:9px;
+  border:1px dashed rgba(0,0,0,.26); pointer-events:none; animation:sketch-wiggle 3.8s ease-in-out infinite;
 }
-.form-control::placeholder{color:var(--muted)}
-.form-control:focus{
-  background: rgba(255,255,255,.10);
-  border-color: transparent;
-  box-shadow:0 0 0 .25rem var(--focus);
-  color:var(--text);
-  outline:0;
-}
+.auth-title{ margin:0; font-weight:900; }
+.auth-sub{ color:var(--ink-3); font-weight:600; }
 
-/* Input wrapper for password toggle */
-.input-wrap{ position:relative }
-.toggle-eye{
-  position:absolute; right:10px; top:50%; transform:translateY(-50%);
-  background:transparent; border:0; color:var(--muted); outline:0; padding:6px;
-}
-.toggle-eye:focus{ color:#fff }
+/* -------------------- FORM -------------------- */
+.form-label{ font-weight:900; color:#2A2A2A; }
+.form-group{ margin-bottom:14px; }
 
-/* Buttons (iOS tint style) */
-.btn-brand{
-  display:inline-flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg,var(--brand),var(--brand2));
-  border:0; color:white; font-weight:800; letter-spacing:.2px;
-  padding:12px 16px; border-radius:12px; width:100%;
-  box-shadow:0 10px 24px rgba(37,117,252,.35);
-  transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
-}
-.btn-brand:hover{ filter:brightness(1.06) }
-.btn-brand:active{ transform: translateY(1px) }
-
-.btn-secondary-soft{
-  display:inline-flex; align-items:center; justify-content:center;
-  background:rgba(255,255,255,.10);
-  border:1px solid var(--border); color:var(--text);
-  font-weight:800; padding:12px 16px; border-radius:12px; width:100%;
-}
-.btn-secondary-soft:hover{ background:rgba(255,255,255,.16) }
-
-/* Links */
-.helper a{ color:#cfe2ff; text-decoration:none }
-.helper a:hover{ text-decoration:underline }
-
-/* Footer line */
-.divider{ display:flex; align-items:center; color:var(--muted); font-size:.92rem; }
-.divider::before,.divider::after{
-  content:""; flex:1; height:1px; background: var(--border); margin:0 .75rem;
-}
-
-/* Small tweaks for Bootstrap spacing harmony */
-.mb-2{ margin-bottom:.5rem!important }
-.mb-3{ margin-bottom:1rem!important }
-.mt-3{ margin-top:1rem!important }
-/* Affix wrapper so the eye centers on the input, not the label */
-/* Labels shouldn’t overlap inputs */
-.form-label{ display:block; margin-bottom:.35rem; }
-
-/* Affix wrapper so the eye centers and doesn’t block clicks */
 .input-affix{ position:relative; }
-.input-affix .form-control{ padding-right:44px; } /* room for eye button */
+.input-affix .form-control{
+  padding-right:44px; /* room for eye */
+}
 
-/* Keep the button on top, but only under its own area */
-.input-affix .toggle-eye{
-  position:absolute;
-  right:10px;
-  top:50%;
-  transform:translateY(-50%);
-  background:transparent;
-  border:0;
-  padding:6px;
-  line-height:1;
-  color:var(--muted);
-  z-index:2;
-  pointer-events:auto; /* ensure it can be clicked */
+/* Inputs */
+.form-control{
+  border:2px solid var(--btn-line);
+  border-radius:12px;
+  color:var(--ink);
+  background:#fff;
+  box-shadow:var(--pencil-emboss);
+  background-image:
+    linear-gradient(180deg, rgba(0,0,0,.02), rgba(255,255,255,0) 50%),
+    radial-gradient(rgba(0,0,0,.012) .8px, transparent 1.2px) 0 0/8px 8px;
 }
-.input-affix .toggle-eye:focus{ color:#fff }
+.form-control::placeholder{ color:var(--ink-3); }
+.form-control:focus{
+  border-color:var(--btn-line-hover);
+  outline:3px dashed var(--btn-line-hover);
+  outline-offset:2px;
+  box-shadow:0 0 0 6px var(--focus);
+}
 
-/* Make sure no container above intercepts clicks */
-.auth-card, .auth-page { position:relative; }
-.was-validated .form-control:valid,
-.form-control.is-valid,
-.was-validated .form-control:valid:focus,
-.form-control.is-valid:focus{
-  border-color: var(--border) !important;
-  box-shadow: none !important;
-  background-image: none !important;
+/* Hide the default BS focus shadow for consistency */
+.form-control:focus{
+  box-shadow:0 0 0 6px var(--focus);
 }
-.auth-head{display:flex;align-items:center;gap:12px}
-.brand-badge{
-  width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 6px 18px rgba(0,0,0,.35)
+
+/* Password toggle button */
+/* Pencil-style password toggle */
+.toggle-eye{
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  width:38px; height:38px;
+  display:grid; place-items:center;
+  border-radius:11px;
+  border:2px solid var(--btn-line);
+  background:#fff;
+  background-image:linear-gradient(180deg, rgba(0,0,0,.03), rgba(255,255,255,0) 55%), var(--btn-hatch-1), var(--btn-hatch-2);
+  color:var(--ink);
+  box-shadow:var(--pencil-shadow);
+  cursor:pointer; user-select:none;
 }
-.brand-badge img{width:28px;height:28px;display:block}
+.toggle-eye::before{
+  content:""; position:absolute; inset:3px; border-radius:9px;
+  border:1px dashed rgba(0,0,0,.26);
+  pointer-events:none; animation:sketch-wiggle 3.8s ease-in-out infinite;
+}
+.toggle-eye:hover{ background:#F6F7F8; border-color:var(--btn-line-hover); }
+.toggle-eye:active{ transform:translateY(-50%) scale(.985); }
+.toggle-eye:focus-visible{
+  outline:3px dashed var(--btn-line); outline-offset:2px;
+  box-shadow:0 0 0 6px var(--focus), var(--pencil-shadow);
+}
+
+/* SVG icon inside the eye button */
+.toggle-eye svg{
+  width:18px; height:18px; display:block;
+  stroke:var(--ink-2); fill:none; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round;
+}
+.toggle-eye:hover svg{ stroke:var(--ink); }
+
+/* Bootstrap validation integration */
+.needs-validation.was-validated .form-control:invalid,
+.form-control.is-invalid{
+  border-color:#E58E8E;
+  background-color:#FFF6F6;
+}
+.needs-validation.was-validated .form-control:valid,
+.form-control.is-valid{
+  border-color:#82D3A3;
+  background-color:#F7FFF9;
+}
+.invalid-feedback, .valid-feedback{
+  font-weight:700;
+}
+.invalid-feedback{ color:#B85656; }
+.valid-feedback{ color:#2C7A4B; }
+
+/* -------------------- BUTTONS -------------------- */
+.btn-brand{
+  appearance:none; position:relative;
+  width:100%;
+  padding:12px 16px;
+  border-radius:14px;
+  font-weight:900; font-size:16px;
+  color:#fff; background:var(--ink);
+  border:2px solid var(--ink-2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25), var(--pencil-shadow);
+  transition:transform .06s ease, filter .2s ease, box-shadow .2s ease, background .2s ease, letter-spacing .12s;
+}
+.btn-brand:hover{
+  filter:brightness(1.03);
+  letter-spacing:.3px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 3px 8px rgba(0,0,0,.10), 0 6px 14px rgba(0,0,0,.05);
+}
+.btn-brand:active{ transform:translateY(1px) scale(.99); }
+.btn-brand:focus-visible{
+  outline:3px dashed var(--btn-line); outline-offset:2px;
+  box-shadow:0 0 0 6px var(--focus), var(--pencil-shadow);
+}
+
+/* Secondary soft button (used as <a>) */
+.btn-secondary-soft{
+  appearance:none; position:relative;
+  padding:10px 14px;
+  border-radius:12px;
+  font-weight:900; font-size:15px; color:var(--ink);
+  background:#fff;
+  border:2px solid var(--btn-line);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6), var(--pencil-shadow);
+  background-image:linear-gradient(180deg, rgba(0,0,0,.03), rgba(255,255,255,0) 55%), var(--btn-hatch-1), var(--btn-hatch-2);
+  text-decoration:none !important;
+  display:inline-block;
+}
+.btn-secondary-soft:hover{
+  background:#F6F7F8; border-color:var(--btn-line-hover);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65), 0 3px 8px rgba(0,0,0,.10), 0 6px 14px rgba(0,0,0,.05);
+}
+.btn-secondary-soft:active{ transform:translateY(1px) scale(.99); }
+.btn-secondary-soft:focus-visible{
+  outline:3px dashed var(--btn-line); outline-offset:2px;
+  box-shadow:0 0 0 6px var(--focus), var(--pencil-shadow);
+}
+
+/* Divider with center text */
+.divider{
+  position:relative; text-align:center; color:var(--ink-3); font-weight:800;
+}
+.divider::before,
+.divider::after{
+  content:""; position:absolute; top:50%; width:40%;
+  border-top:2px dashed rgba(0,0,0,.18);
+}
+.divider::before{ left:0; }
+.divider::after{ right:0; }
+
+/* Helper text (footer under forms) */
+.helper{ color:var(--ink-2); font-weight:700; }
+.helper a{ color:var(--ink); text-decoration:underline; }
+.helper a:hover{ text-decoration:none; }
+
+/* -------------------- LANG SWITCH (top-right pills) -------------------- */
+.lang-switch{
+  position:sticky; top:0; z-index:60;
+  display:flex; gap:8px; justify-content:flex-end; padding:10px;
+}
+.lang-switch button{
+  background:#1c2230; color:#fff;
+  border:2px solid var(--line);
+  border-radius:10px; padding:6px 10px;
+  font-weight:800; cursor:pointer;
+  box-shadow:var(--pencil-shadow);
+}
+.lang-switch button:hover{ filter:brightness(1.05); }
+.lang-switch button:focus-visible{
+  outline:3px dashed var(--btn-line); outline-offset:2px;
+  box-shadow:0 0 0 6px var(--focus), var(--pencil-shadow);
+}
+.lang-switch button.active{
+  background:#2A2A2A; border-color:#2A2A2A;
+}
+
+/* -------------------- UTILITIES -------------------- */
+.card-body{ position:relative; z-index:1 }
+.h4.auth-title{ font-weight:900 }
+
+/* Remove underline from any link styled as a button anywhere inside auth card */
+.auth-card a.btn, .auth-card a.btn-secondary-soft, .auth-card a.btn-brand{ text-decoration:none !important; }
+
+/* -------------------- RESPONSIVE -------------------- */
+@media (max-width:420px){
+  .brand-badge{ width:40px; height:40px; }
+  .toggle-eye{ width:34px; height:34px; }
+  .btn-secondary-soft{ display:block; width:100%; text-align:center; }
+}
+
+/* -------------------- ACCESSIBILITY & MOTION -------------------- */
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+
+/* -------------------- ANIMATIONS -------------------- */
+@keyframes paper-pop{ 0%{transform:scale(.98);opacity:0} 100%{transform:scale(1);opacity:1} }
+@keyframes sketch-wiggle{ 0%{transform:rotate(.1deg) translate(0,0)} 50%{transform:rotate(-.2deg) translate(.2px,.2px)} 100%{transform:rotate(.1deg) translate(0,0)} }
+/* ===== Login page overrides: white background, no page scroll ===== */
+
+/* Your login/signup bodies already use these classes.
+   Force a plain white background and disable page scroll. */
+body.bg-grad-purple,
+body.bg-grad-peach{
+  background:#fff !important;
+  background-image:none !important;
+  overflow:hidden;              /* remove page scroll */
+}
+
+/* Make sure the whole layout fits the viewport without causing page scroll */
+html, body{ height:100%; }
+
+/* Center the auth card and keep it inside the viewport.
+   If the screen is tiny, only the card itself will scroll (not the page). */
+.auth-page{
+  min-height:100dvh;
+  display:grid;
+  place-items:center;
+  padding:0 16px;               /* keep a little side breathing room */
+}
+.auth-card{
+  width:min(92vw, 560px);
+  border-radius:20px;
+  max-height:calc(100dvh - 48px);
+  overflow:auto;                /* internal scroll only if absolutely needed */
+  -webkit-overflow-scrolling:touch;
+}
+/* Center the auth card perfectly, regardless of the lang switch bar */
+
+/* Keep the page white and non-scrollable */
+html, body { height: 100%; }
+body.bg-grad-purple,
+body.bg-grad-peach{
+  background:#fff !important;
+  background-image:none !important;
+  overflow:hidden;
+}
+
+/* Pin the language buttons so they don't affect layout height */
+.lang-switch{
+  position: fixed !important;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  padding: 0;
+  margin: 0;
+}
+
+/* Center the card in the viewport */
+.auth-page{
+  min-height: 100dvh;            /* fallback */
+  min-height: 100svh;            /* modern mobile browsers */
+  display: grid;
+  place-items: center;
+  padding: 0 16px;
+}
+
+/* Size & internal scroll only when necessary */
+.auth-card{
+  width: min(92vw, 560px);
+  margin: 0;
+  max-height: calc(100svh - 64px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}

@@ -1,272 +1,468 @@
 /* ========================================================================
-   THEME TOKENS (iOS dark look)
+   THEME TOKENS (Light, pencil-drawn look) — Pastel & softer grays
    ======================================================================== */
 :root{
-  /* Surfaces & text */
-  --ios-bg:#0b0e23;                /* page background */
-  --ios-card:rgba(20,24,34,.82);   /* glassy card surface */
-  --ios-separator:rgba(255,255,255,.10);
-  --ios-text:#e9eef6;
-  --ios-subtext:#9fb0c6;
+  /* Paper & ink */
+  --paper:#FAF9F6;
+  --card:#FFFFFF;
+  --ink:#1A1A1A;                 /* slightly softer than pure black */
+  --ink-2:#343434;
+  --ink-3:#8A8A8A;
 
-  /* Tints — updated button colors */
-  --ios-blue:#5E5CE6;              /* primary */
-  --ios-green:#30D158;             /* success */
-  --ios-red:#FF453A;               /* danger */
-  --ios-gray:#8E8E93;              /* neutral */
-  --ios-blue-hover:#6B68F0;        /* primary hover */
-  --ios-green-pressed:#2AC14F;     /* success pressed */
-  --ios-red-pressed:#E63B31;       /* danger pressed */
+  /* Lines (lighter gray instead of black) */
+  --line:#9A9AA1;                /* main outline */
+  --line-soft:#E2E3E8;           /* separators and light frames */
 
-  /* Focus */
-  --focus:rgba(37,117,252,.28);
+  /* iOS-ish tints (kept monochrome) */
+  --ios-bg:var(--paper);
+  --ios-card:var(--card);
+  --ios-separator:var(--line-soft);
+  --ios-text:var(--ink);
+  --ios-subtext:var(--ink-3);
 
-  /* Mood category tokens (unchanged, work well on dark) */
-  --mood-bad:#FF3B30;
-  --mood-poor:#FF9F0A;
-  --mood-neutral:#D1D5DB;
-  --mood-good:#34C759;
-  --mood-best:#0A84FF;
+  /* Monochrome generic buttons */
+  --ios-blue:#222222;
+  --ios-green:#2A2A2A;
+  --ios-red:#2A2A2A;
+  --ios-gray:#474747;
+  --ios-blue-hover:#2E2E2E;
+  --ios-green-pressed:#2E2E2E;
+  --ios-red-pressed:#2E2E2E;
+
+  /* Focus ring in graphite */
+  --focus:rgba(0,0,0,.18);
+
+  /* Mood category tokens (pastel) — these tint calendar if no submood color */
+  --mood-bad:#FFCACA;            /* soft red */
+  --mood-poor:#FFE4B8;           /* soft orange */
+  --mood-neutral:#E9EDF2;        /* soft gray-blue */
+  --mood-good:#CFEFD9;           /* soft green */
+  --mood-best:#CDE2FF;           /* soft blue */
+
+  /* Pencil shadows & emboss */
+  --pencil-shadow:0 2px 0 rgba(0,0,0,.05), 0 6px 14px rgba(0,0,0,.05);
+  --pencil-emboss:inset 0 1px 0 rgba(0,0,0,.05);
+
+  /* Button lines + hatching (lighter) */
+  --btn-line:#9C9C9C;
+  --btn-line-hover:#8C8C8C;
+  --btn-line-active:#7B7B7B;
+  --btn-hatch-1:radial-gradient(rgba(0,0,0,.025) 1px, transparent 1.2px) 0 0/6px 6px;
+  --btn-hatch-2:radial-gradient(rgba(0,0,0,.018) 1px, transparent 1.4px) 2px 2px/8px 8px;
 }
 
 /* ========================================================================
-   BASE
+   BASE (paper texture + ink)
    ======================================================================== */
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter","Noto Sans KR",system-ui,Arial,sans-serif;
-  margin:0;background:
-    radial-gradient(900px 900px at 10% 20%, rgba(106,17,203,.18), transparent 60%),
-    radial-gradient(800px 800px at 85% 80%, rgba(37,117,252,.18), transparent 55%),
-    var(--ios-bg);
+  margin:0;
+  background:
+    radial-gradient(rgba(0,0,0,.025) 1px, transparent 1px) 0 0/8px 8px,
+    radial-gradient(rgba(0,0,0,.02) 1px, transparent 1px) 4px 4px/8px 8px,
+    var(--paper);
   color:var(--ios-text);
-  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+}
+h2{
+  font-size:22px;margin:0 0 6px 0;font-weight:900;
+  letter-spacing:.2px;text-shadow:0 .5px 0 rgba(0,0,0,.14);
+  animation:fade-up .5s ease both;
 }
 
 /* ========================================================================
-   LAYOUT: Calendar (L), Chat (L), Journal (S)
+   LAYOUT
    ======================================================================== */
 .container.three-column-layout{
   display:grid;
   grid-template-columns:minmax(300px,1.35fr) minmax(360px,1.65fr) minmax(260px,.9fr);
   grid-template-areas:"calendar chat journal";
-  gap:16px;align-items:stretch;width:100%;max-width:1400px;margin:0 auto;
-  padding:clamp(12px,2vw,24px);min-height:100dvh;
+  gap:16px; align-items:stretch; width:100%; max-width:1400px; margin:0 auto;
+  padding:clamp(12px,2vw,24px); min-height:100dvh;
 }
-.section{height:auto;min-height:clamp(420px,58vh,720px)}
+.section{height:auto; min-height:clamp(420px,58vh,720px)}
 .section.mood-tracker{grid-area:calendar}
 .section.chat-section{grid-area:chat}
-.section.journaling{grid-area:journal;min-height:clamp(320px,44vh,560px)}
-
+.section.journaling{grid-area:journal; min-height:clamp(320px,44vh,560px)}
 @media (max-width:1280px){
   .container.three-column-layout{
     grid-template-columns:1fr 1fr;
-    grid-template-areas:
-      "calendar chat"
-      "journal  journal";
+    grid-template-areas:"calendar chat" "journal journal";
   }
   .section{min-height:clamp(360px,48vh,640px)}
   .section.journaling{min-height:clamp(300px,38vh,520px)}
 }
 @media (max-width:860px){
-  .container.three-column-layout{
-    grid-template-columns:1fr;
-    grid-template-areas:"calendar" "chat" "journal";
-  }
+  .container.three-column-layout{ grid-template-columns:1fr; grid-template-areas:"calendar" "chat" "journal"; }
   .section{min-height:auto}
 }
 
 /* ========================================================================
-   iOS CARD
+   CARD (pencil-drawn style)
    ======================================================================== */
 .section{
-  border-radius:22px;background:var(--ios-card);
-  border:1px solid var(--ios-separator);
-  box-shadow:0 20px 50px rgba(0,0,0,.45);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  padding:20px 16px;display:flex;flex-direction:column;gap:10px;
+  position:relative; border-radius:22px; background:var(--ios-card);
+  border:2px solid var(--line); box-shadow:var(--pencil-shadow);
+  padding:20px 16px; display:flex; flex-direction:column; gap:10px;
+  animation:paper-pop .38s cubic-bezier(.2,.8,.2,1) both;
 }
-
-/* Headings */
-h2{font-size:22px;margin:0 0 6px 0;font-weight:800}
-
-/* Today/controls */
-.today-date{color:var(--ios-subtext);font-size:13px;margin-bottom:2px}
-.calendar-controls{
-  display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 10px
+.section::before{
+  content:""; position:absolute; inset:0; border-radius:22px; pointer-events:none;
+  background:
+    radial-gradient(rgba(0,0,0,.012) .8px, transparent 1.2px) 0 0/7px 7px,
+    radial-gradient(rgba(0,0,0,.01) .8px, transparent 1.2px) 3px 4px/9px 9px;
+  opacity:.45; mix-blend-mode:multiply;
 }
-#current-month{font-weight:800}
-
-/* ========================================================================
-   iOS BUTTON SYSTEM (filled style + variants)
-   ======================================================================== */
-.stylish-btn,
-.input-area button,
-button[type="submit"]{
-  appearance:none;
-  border:0;
-  border-radius:14px;
-  padding:12px 16px;
-  font-size:16px;
-  font-weight:800;
-  color:#fff;
-  background: var(--tint, var(--ios-blue));
-  box-shadow:0 1px 0 rgba(0,0,0,.04), 0 6px 16px rgba(16,37,66,.35);
-  transition: transform .06s ease, filter .2s ease, box-shadow .2s ease, background .2s ease;
-  cursor:pointer;
+.section::after{
+  content:""; position:absolute; inset:6px; border-radius:18px;
+  border:1.5px dashed rgba(0,0,0,.16); pointer-events:none;   /* lighter dashed inner border */
+  animation:sketch-wiggle 3.8s ease-in-out infinite;
 }
-.stylish-btn:hover,
-.input-area button:hover,
-button[type="submit"]:hover{ filter:brightness(1.06) }
-.stylish-btn:active,
-.input-area button:active,
-button[type="submit"]:active{ transform:translateY(1px); filter:brightness(.96) }
-.stylish-btn:focus-visible,
-.input-area button:focus-visible,
-button[type="submit"]:focus-visible{
-  outline:none;
-  box-shadow:0 0 0 3px var(--focus), 0 6px 16px rgba(16,37,66,.35);
-}
-.stylish-btn:disabled,
-.input-area button:disabled,
-button[type="submit"]:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none }
-
-/* Color variants via data-attribute (optional) */
-.stylish-btn[data-variant="success"],
-.input-area button[data-variant="success"],
-button[type="submit"][data-variant="success"]{ --tint: var(--ios-green) }
-.stylish-btn[data-variant="danger"],
-.input-area button[data-variant="danger"],
-button[type="submit"][data-variant="danger"]{ --tint: var(--ios-red) }
-.stylish-btn[data-variant="gray"],
-.input-area button[data-variant="gray"],
-button[type="submit"][data-variant="gray"]{ --tint: var(--ios-gray) }
-
-/* Keep small calendar nav buttons compact */
-.calendar-controls .stylish-btn{ padding:8px 12px; font-size:14px }
 
 /* ========================================================================
    CALENDAR
    ======================================================================== */
+.today-date{color:var(--ios-subtext); font-size:13px; margin-bottom:2px}
+.calendar-controls{ display:flex; align-items:center; justify-content:center; gap:10px; margin:6px 0 10px }
+#current-month{font-weight:900}
+.calendar-controls .stylish-btn{ padding:8px 12px; font-size:14px; border-color:var(--btn-line) }
+
 .calendar-responsive-wrapper{
-  display:flex;flex-direction:column;align-items:center;width:100%;
-  max-width:clamp(340px,95%,620px);margin:0 auto;background:#0f1525;border-radius:16px;
-  border:1px solid var(--ios-separator);padding:10px 8px;box-shadow:0 6px 18px rgba(0,0,0,.35)
+  display:flex; flex-direction:column; align-items:center; width:100%;
+  max-width:clamp(340px,95%,620px); margin:0 auto; background:transparent;
+  border:0; box-shadow:none; padding:0; position:relative;
 }
 .calendar-weekdays{
-  display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;font-size:12px;color:var(--ios-subtext);font-weight:600
+  display:grid; grid-template-columns:repeat(7,1fr);
+  padding:8px; column-gap:6px; margin-bottom:6px; font-size:12px;
+  color:var(--ios-subtext); font-weight:800;
 }
-.sunday{color:#ff6b6b}
+.calendar-weekdays span{display:flex;align-items:center;justify-content:center}
+/* Neutral Sundays */
+.calendar-weekdays .sunday{ color: var(--ios-subtext) }
+
 #calendar{
-  display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;padding:8px;background:#0b1020;border-radius:12px;
-  border:1px solid var(--ios-separator);width:100%;min-width:0;max-width:100%
+  display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:8px;
+  padding:8px; background:#FFFFFF; border-radius:12px; border:2px solid var(--line);
+  width:100%; min-width:0; max-width:100%;
 }
 .calendar-day{
-  width:clamp(30px,4.6vw,48px);height:clamp(30px,4.6vw,48px);
-  background:#1b2130;border-radius:10px;border:1px solid var(--ios-separator);
-  display:flex;align-items:center;justify-content:center;font-size:clamp(12px,1.2vw,16px);font-weight:600;cursor:pointer;
-  transition:background .15s,transform .12s,border .15s,box-shadow .12s;margin:0 auto;
-  color:var(--ios-text);
+  position:relative;
+  width:clamp(30px,4.6vw,48px); height:clamp(30px,4.6vw,48px);
+  background:#FFFFFF; border-radius:10px; border:1.5px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-size:clamp(12px,1.2vw,16px); font-weight:800; cursor:pointer;
+  transition:background .15s, transform .12s, border .15s, box-shadow .12s;
+  margin:0 auto; color:var(--ios-text); box-shadow:0 1px 0 rgba(0,0,0,.06);
 }
-.calendar-day:hover{background:#232c42;transform:scale(1.06);border-color:rgba(255,255,255,.18)}
+.calendar-day:hover{ background:#F6F7F8; transform:translateY(-1px) rotate(-.2deg); box-shadow:0 3px 8px rgba(0,0,0,.07) }
 
-/* Selection ring that preserves the cell's mood color (if any) */
 .calendar-day.selected{
-  outline:none;
-  background:inherit !important; /* keep mood color */
-  box-shadow:0 0 0 3px var(--focus);
-  border-color:var(--ios-blue);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus), 0 3px 8px rgba(0,0,0,.06);
+  border-color: var(--line);
+  animation: select-pop .18s ease-out both;
+}
+
+/* Mood tint helpers + CSS var used by animation */
+.calendar-day[data-mood="bad"]    { --mood-fill:var(--mood-bad);     background:var(--mood-bad);     color:#222; border-color:#00000010 }
+.calendar-day[data-mood="poor"]   { --mood-fill:var(--mood-poor);    background:var(--mood-poor);    color:#222; border-color:#00000010 }
+.calendar-day[data-mood="neutral"]{ --mood-fill:var(--mood-neutral); background:var(--mood-neutral); color:#222; border-color:#00000010 }
+.calendar-day[data-mood="good"]   { --mood-fill:var(--mood-good);    background:var(--mood-good);    color:#222; border-color:#00000010 }
+.calendar-day[data-mood="best"]   { --mood-fill:var(--mood-best);    background:var(--mood-best);    color:#222; border-color:#00000010 }
+
+/* Pencil “coloring” animation (strong) */
+.calendar-day.save-pulse{
+  --_fill: var(--mood-fill, var(--mood-neutral));
+  animation: pencil-fill-strong .9s cubic-bezier(.2,.9,.2,1) forwards, mood-pulse .9s ease-out;
+  background:
+    linear-gradient(90deg, var(--_fill) 0 0) left/0% 100% no-repeat,
+    radial-gradient(rgba(0,0,0,.05) 1px, transparent 1.4px) 0 0/6px 6px,
+    #fff;
+  border-color:#00000010;
+  will-change: background-size, transform;
+}
+.calendar-day.save-pulse::after{
+  content:""; position:absolute; top:50%; left:6px; transform:translateY(-50%) rotate(-34deg);
+  width:18px; height:10px; border-radius:2px;
+  background: linear-gradient(90deg, #5A5A5A 0 55%, #B3B3B3 55% 100%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.18); opacity:.95;
+  animation: pencil-run-strong .9s cubic-bezier(.2,.9,.2,1) forwards;
 }
 
 /* ========================================================================
-   MOOD BUTTONS (category chips)
+   MOOD & SUBMOOD BUTTONS (pencil style, pastel)
    ======================================================================== */
 .emotion-buttons{display:flex;justify-content:center;gap:10px;margin-top:6px;flex-wrap:wrap;width:100%}
 .emotion-buttons.one-row{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;gap:10px}
-.mood-btn{
-  padding:10px 14px;border:1px solid var(--ios-separator);border-radius:12px;font-size:14px;font-weight:800;background:#1c2230;color:var(--ios-text);cursor:pointer;
-  transition:transform .12s,box-shadow .12s;box-shadow:0 1px 2px rgba(0,0,0,.24)
-}
-.mood-btn:hover{transform:scale(1.04);box-shadow:0 6px 18px rgba(0,0,0,.28)}
-/* Distinct category colors */
-.mood-btn.bad{    background:var(--mood-bad)!important;    color:#fff!important }
-.mood-btn.poor{   background:var(--mood-poor)!important;   color:#111!important }
-.mood-btn.neutral{background:var(--mood-neutral)!important;color:#111!important }
-.mood-btn.good{   background:var(--mood-good)!important;   color:#fff!important }
-.mood-btn.best{   background:var(--mood-best)!important;   color:#fff!important }
 
-/* Submood buttons */
+.mood-btn{
+  padding:10px 14px; border:2px solid var(--btn-line); border-radius:12px;
+  font-size:14px; font-weight:900; background:#FFFFFF; color:var(--ios-text);
+  cursor:pointer; transition:transform .12s, box-shadow .12s, filter .12s;
+  box-shadow:var(--pencil-shadow);
+}
+.mood-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.10) }
+/* Soft washes + tinted borders (pastel) */
+.mood-btn.bad{
+  border-color:rgba(255,124,124,.45);
+  background-image:linear-gradient(180deg, rgba(255,124,124,.14), transparent 60%);
+}
+.mood-btn.poor{
+  border-color:rgba(255,191,102,.45);
+  background-image:linear-gradient(180deg, rgba(255,191,102,.16), transparent 60%);
+}
+.mood-btn.neutral{
+  border-color:rgba(26,26,26,.18);
+  background-image:linear-gradient(180deg, rgba(233,237,242,.30), transparent 60%);
+}
+.mood-btn.good{
+  border-color:rgba(123,207,147,.45);
+  background-image:linear-gradient(180deg, rgba(123,207,147,.18), transparent 60%);
+}
+.mood-btn.best{
+  border-color:rgba(145,187,255,.45);
+  background-image:linear-gradient(180deg, rgba(145,187,255,.16), transparent 60%);
+}
+
 #submood-buttons-container{display:none;flex-wrap:wrap;justify-content:center;margin-top:10px;gap:8px}
 .submood-btn{
-  min-width:88px;padding:10px 14px;border-radius:12px;border:1px solid var(--ios-separator);
-  font-size:14px;font-weight:800;background:#1c2230;color:var(--ios-text);cursor:pointer;
-  transition:transform .1s,box-shadow .1s;box-shadow:0 1px 2px rgba(0,0,0,.24)
+  min-width:88px; padding:10px 14px; border-radius:12px; border:2px solid var(--btn-line);
+  font-size:14px; font-weight:900; background:#FFFFFF; color:var(--ios-text);
+  cursor:pointer; transition:transform .1s, box-shadow .1s; box-shadow:var(--pencil-shadow)
 }
-.submood-btn:hover{transform:scale(1.05);box-shadow:0 6px 18px rgba(0,0,0,.28)}
+.submood-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.10) }
+/* Tinted borders per category + subtle hover wash (pastel) */
+.submood-btn[data-tone="bad"]     { border-color:rgba(255,124,124,.45) }
+.submood-btn[data-tone="poor"]    { border-color:rgba(255,191,102,.45) }
+.submood-btn[data-tone="neutral"] { border-color:rgba(26,26,26,.18) }
+.submood-btn[data-tone="good"]    { border-color:rgba(123,207,147,.45) }
+.submood-btn[data-tone="best"]    { border-color:rgba(145,187,255,.45) }
+.submood-btn[data-tone="bad"]:hover     { background-image:linear-gradient(180deg, rgba(255,124,124,.12), transparent 60%) }
+.submood-btn[data-tone="poor"]:hover    { background-image:linear-gradient(180deg, rgba(255,191,102,.12), transparent 60%) }
+.submood-btn[data-tone="neutral"]:hover { background-image:linear-gradient(180deg, rgba(233,237,242,.22), transparent 60%) }
+.submood-btn[data-tone="good"]:hover    { background-image:linear-gradient(180deg, rgba(123,207,147,.12), transparent 60%) }
+.submood-btn[data-tone="best"]:hover    { background-image:linear-gradient(180deg, rgba(145,187,255,.12), transparent 60%) }
 
 /* ========================================================================
    NOTES
    ======================================================================== */
 .note{
-  padding:12px;background:var(--ios-card);border-radius:14px;border:1px solid var(--ios-separator);
-  text-align:center;color:var(--ios-text)
+  padding:12px; background:var(--ios-card); border-radius:14px; border:2px solid var(--line);
+  text-align:center; color:var(--ios-text); box-shadow:var(--pencil-shadow)
 }
-.note a{color:var(--ios-blue);font-weight:800;text-decoration:none}
+/* Keep text links underlined, but NOT button-like links */
+.note a{ color:var(--ink); font-weight:900; text-decoration:none }
+.note a:not(.stylish-btn){ text-decoration:underline }
+
+/* Stats pill wrapper already removes the outer frame */
+.section.mood-tracker .note{ padding:0; border:0; background:transparent; box-shadow:none }
+.section.mood-tracker .note::before, .section.mood-tracker .note::after{ content:none }
+.section.mood-tracker .note .stylish-btn{ display:inline-flex; margin:0 auto }
 
 /* ========================================================================
    CHAT
    ======================================================================== */
-.chat-greeting{margin-bottom:6px;color:var(--ios-blue);font-size:15px;font-weight:700}
+.chat-greeting{margin-bottom:6px;color:var(--ink-2);font-size:15px;font-weight:800}
 .chat-box{
-  width:100%;height:clamp(380px,52vh,720px);background:#0f1525;border-radius:18px;border:1px solid var(--ios-separator);
-  box-shadow:0 6px 18px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px;padding:10px
+  width:100%; height:clamp(380px,52vh,720px); background:#FFFFFF; border-radius:18px; border:2px solid var(--line);
+  box-shadow:var(--pencil-shadow); display:flex; flex-direction:column; gap:10px; padding:10px; position:relative;
 }
-.messages{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.chat-box::after{
+  content:""; position:absolute; inset:6px; border-radius:14px; border:1.5px dashed rgba(0,0,0,.16); pointer-events:none;
+}
+.messages{flex:1 1 auto; display:flex; flex-direction:column; gap:8px; overflow-y:auto}
 .message{
-  max-width:80%;padding:10px 14px;border-radius:18px;font-size:16px;line-height:1.45;word-break:break-word;box-shadow:0 1px 1px rgba(0,0,0,.28);position:relative
+  max-width:80%; padding:10px 14px; border-radius:18px; font-size:16px; line-height:1.45; word-break:break-word;
+  position:relative; border:2px solid var(--line); background:#FFFFFF; color:var(--ink);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6), var(--pencil-shadow);
+  animation:fade-up .28s ease both;
 }
-.message.user{align-self:flex-end;background:var(--ios-blue);color:#fff;border-bottom-right-radius:6px}
-.message.bot{align-self:flex-start;background:#2a2f3d;color:#e6edf7;border-bottom-left-radius:6px}
-.message.bot.typing{display:inline-flex;align-items:center;gap:6px;padding:10px 12px}
-.typing-dots{display:inline-flex;gap:6px;align-items:center}
-.typing-dots .dot{width:6px;height:6px;border-radius:50%;background:#8E8E93;opacity:.7;animation:blink 1.2s infinite ease-in-out}
+.message.user{ align-self:flex-end; border-bottom-right-radius:6px; background:#FFFFFF }
+.message.bot{ align-self:flex-start; border-bottom-left-radius:6px; background:#F7F7F7 }
+.message.bot.typing{display:inline-flex; align-items:center; gap:6px; padding:10px 12px}
+.typing-dots{display:inline-flex; gap:6px; align-items:center}
+.typing-dots .dot{width:6px;height:6px;border-radius:50%;background:#777;opacity:.8;animation:blink 1.2s infinite ease-in-out}
 .typing-dots .dot:nth-child(2){animation-delay:.2s}
 .typing-dots .dot:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,80%,100%{transform:translateY(0);opacity:.6}40%{transform:translateY(-3px);opacity:1}}
 
 .input-area{display:flex;gap:8px;width:100%;align-items:center}
 .input-area input{
-  flex:1;padding:12px 14px;border-radius:22px;border:1px solid var(--ios-separator);background:#1c2230;font-size:16px;color:var(--ios-text)
+  flex:1; padding:12px 14px; border-radius:22px; border:2px solid #9C9C9C; background:#FFFFFF; font-size:16px; color:var(--ios-text);
+  box-shadow:var(--pencil-emboss);
+  background-image:linear-gradient(180deg, rgba(0,0,0,.02), rgba(255,255,255,0) 50%), radial-gradient(rgba(0,0,0,.012) .8px, transparent 1.2px) 0 0/8px 8px;
 }
 .input-area input::placeholder{color:var(--ios-subtext)}
-.input-area input:focus{border-color:transparent;outline:none;box-shadow:0 0 0 4px var(--focus)}
+.input-area input:focus{border-color:#8C8C8C; outline:3px dashed #8C8C8C; outline-offset:2px; box-shadow:0 0 0 6px var(--focus)}
 .input-area button{
-  min-width:44px;height:44px;padding:0 16px;border-radius:22px;
-  /* rest comes from iOS button system */
-  box-shadow:0 2px 10px rgba(0,0,0,.35)
+  min-width:44px; height:44px; padding:0 16px; border-radius:22px; background:#FFFFFF; color:var(--ink);
+  border:2px solid var(--btn-line); box-shadow:var(--pencil-shadow)
 }
-
-/* Chat actions */
 .chat-actions{margin-top:6px;display:flex;gap:10px;flex-wrap:wrap}
 
 /* ========================================================================
-   JOURNALING FORM
+   BUTTON SYSTEM (shared)
    ======================================================================== */
-form{display:flex;flex-direction:column;gap:12px}
-label{font-size:14px;font-weight:700;color:#d9e1ef}
-textarea,input[type="date"]{
-  padding:12px;border:1px solid var(--ios-separator);border-radius:12px;background:#1c2230;font-size:15px;color:var(--ios-text)
-}
-textarea::placeholder,input[type="date"]::placeholder{color:var(--ios-subtext)}
-textarea{min-height:120px;resize:vertical}
-textarea:focus,input[type="date"]:focus{border-color:transparent;outline:none;box-shadow:0 0 0 4px var(--focus)}
+.stylish-btn,
+.input-area button,
 button[type="submit"]{
-  /* Uses iOS button system */
-  box-shadow:0 2px 10px rgba(0,0,0,.35)
+  appearance:none; position:relative; border:2px solid var(--btn-line); border-radius:14px;
+  padding:12px 16px; font-size:16px; font-weight:900; color:var(--ink);
+  background:#FFFFFF;
+  background-image:linear-gradient(180deg, rgba(0,0,0,.03), rgba(255,255,255,0) 55%), var(--btn-hatch-1), var(--btn-hatch-2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6), var(--pencil-shadow);
+  transition:transform .06s ease, filter .2s ease, box-shadow .2s ease, background .2s ease, letter-spacing .12s;
+  cursor:pointer;
+}
+.stylish-btn:hover,
+.input-area button:hover,
+button[type="submit"]:hover{
+  background:#F6F7F8; border-color:var(--btn-line-hover);
+  letter-spacing:.3px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65), 0 3px 8px rgba(0,0,0,.10), 0 6px 14px rgba(0,0,0,.05);
+}
+.stylish-btn:active,
+.input-area button:active,
+button[type="submit"]:active{
+  transform:translateY(1px) scale(.99); filter:brightness(.985); border-color:var(--btn-line-active);
+}
+.stylish-btn:focus-visible,
+.input-area button:focus-visible,
+button[type="submit"]:focus-visible{
+  outline:3px dashed var(--btn-line); outline-offset:2px;
+  box-shadow:0 0 0 6px var(--focus), var(--pencil-shadow);
+}
+.stylish-btn:disabled,
+.input-area button:disabled,
+button[type="submit"]:disabled{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none }
+.stylish-btn::before,
+.input-area button::before,
+button[type="submit"]::before{
+  content:""; position:absolute; inset:3px; border-radius:inherit; pointer-events:none;
+  border:1px dashed rgba(0,0,0,.26); opacity:.55; mix-blend-mode:multiply; animation:sketch-wiggle 3.8s ease-in-out infinite;
+}
+.stylish-btn::after,
+.input-area button::after,
+button[type="submit"]::after{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; border:2px solid transparent;
+}
+.stylish-btn:active::after,
+.input-area button:active::after,
+button[type="submit"]:active::after{ animation:ink-ring .45s ease-out }
+
+/* Links that look like buttons should never be underlined */
+a.stylish-btn,
+.chat-actions a.stylish-btn,
+.section.mood-tracker .note a.stylish-btn{
+  text-decoration:none !important;
+}
+a.stylish-btn:hover,
+a.stylish-btn:focus{
+  text-decoration:none !important;
 }
 
 /* ========================================================================
-   ACCESSIBILITY
+   JOURNALING FORM (redesigned)
    ======================================================================== */
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.section.journaling{
+  gap:14px; overflow:hidden;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><g fill='none' stroke='%232b2b30' opacity='.14' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 24l6 3-4 5 6-2 3 6 1-6 6-2-5-3 2-6-5 4-4-4z'/><path d='M60 18l4 8 8 3-8 3-4 8-3-8-8-3 8-3 3-8z'/><path d='M22 90c10-4 26-6 38 2'/><path d='M74 88c6 4 16 7 28 6'/></g></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60'><g fill='none' stroke='%232b2b30' opacity='.16' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M10 48C40 40 80 42 148 30'/><path d='M140 22l12 8-12 8-8-6z'/><path d='M132 24v20'/><path d='M140 22l12 8M140 38l12-8'/></g></svg>");
+  background-repeat:no-repeat,no-repeat;
+  background-position:left 12px bottom 10px, right 14px top 12px;
+  background-size:140px auto, 170px auto;
+}
+form{display:flex;flex-direction:column;gap:12px}
+label{font-size:14px;font-weight:900;color:#2A2A2A}
+textarea,input[type="date"]{
+  padding:12px; border:2px solid #9C9C9C; border-radius:12px; background:#FFFFFF; font-size:15px; color:var(--ios-text);
+  box-shadow:var(--pencil-emboss);
+  background-image:linear-gradient(180deg, rgba(0,0,0,.02), rgba(255,255,255,0) 50%), radial-gradient(rgba(0,0,0,.012) .8px, transparent 1.2px) 0 0/8px 8px;
+}
+textarea::placeholder,input[type="date"]::placeholder{color:var(--ios-subtext)}
+textarea{min-height:120px;resize:vertical}
+textarea:focus,input[type="date"]:focus{border-color:#8C8C8C;outline:3px dashed #8C8C8C;outline-offset:2px;box-shadow:0 0 0 6px var(--focus)}
+button[type="submit"]{ box-shadow:var(--pencil-shadow) }
+
+#new-note-form{
+  display:grid;
+  grid-template-columns:auto minmax(22ch, 1fr) auto;  /* label | big date | save */
+  align-items:center; gap:10px;
+}
+#new-note-form textarea{ grid-column:1 / -1; min-height:140px }
+#new-note-form label{ margin:0; font-weight:900; white-space:nowrap }
+
+/* Longer readable date */
+#new-note-form input[type="date"]{
+  height:40px; padding:8px 12px; border-radius:10px;
+  width:22ch; min-width:20ch; text-align:center; font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1,"lnum" 1; letter-spacing:.2px; white-space:nowrap;
+  background:#FFFFFF; border:2px solid #9C9C9C; box-shadow:var(--pencil-emboss);
+  padding-right:28px;
+}
+#new-note-form input[type="date"]::-webkit-datetime-edit{ padding:0 2px }
+#new-note-form input[type="date"]::-webkit-datetime-edit-fields-wrapper{ padding:0 }
+#new-note-form input[type="date"]::-webkit-calendar-picker-indicator{ margin:0 4px 0 8px }
+
+.section.journaling button[type="submit"]{
+  padding:10px 16px; border-radius:10px; line-height:1; white-space:nowrap; width:auto;
+}
+.section.journaling .note{
+  padding:8px 0 0; border:0; background:transparent; box-shadow:none;
+  display:flex; justify-content:flex-end;
+}
+.section.journaling .note a.stylish-btn{ padding:8px 12px; border-radius:999px; font-size:14px }
+
+@media (max-width:860px){
+  #new-note-form{ grid-template-columns:1fr }
+  #new-note-form label{ margin-top:2px }
+  #new-note-form button[type="submit"]{ justify-self:end }
+  #new-note-form input[type="date"]{ width:20ch; min-width:18ch }
+  .section.journaling{
+    background-size:100px auto, 130px auto;
+    background-position:left 8px bottom 8px, right 10px top 10px;
+  }
+}
+
+/* ========================================================================
+   ACCESSIBILITY & MISC
+   ======================================================================== */
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+.lang-switch{ display:flex; gap:8px; padding:10px 12px; }
+.lang-switch a{
+  text-decoration:none; color:var(--ink); background:#fff; border:2px solid var(--line);
+  border-radius:999px; padding:8px 14px; font-weight:900; box-shadow:var(--pencil-shadow);
+  transition:background-size .25s, transform .06s, box-shadow .2s, background-color .2s;
+  background:linear-gradient(var(--mood-bad),var(--mood-bad)) left bottom/0 2px no-repeat, #fff;
+}
+.lang-switch a:hover{
+  background:linear-gradient(var(--mood-bad),var(--mood-bad)) left bottom/100% 2px no-repeat, #F6F7F8;
+  transform:translateY(-1px);
+}
+.lang-switch a:focus-visible{ outline:3px dashed var(--line); outline-offset:3px; }
+.lang-switch a.active{ background:#2A2A2A; color:#fff; border-color:#2A2A2A; }
+
+/* Cute scrollbar */
+.messages::-webkit-scrollbar{ width:10px }
+.messages::-webkit-scrollbar-thumb{ background:rgba(0,0,0,.12); border-radius:10px; border:2px solid #fff }
+.messages::-webkit-scrollbar-track{ background:transparent }
+
+/* ========================================================================
+   ANIMATIONS
+   ======================================================================== */
+@keyframes paper-pop{ 0%{transform:scale(.98);opacity:0} 100%{transform:scale(1);opacity:1} }
+@keyframes fade-up{ 0%{transform:translateY(4px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+@keyframes select-pop{ 0%{transform:scale(.96)} 100%{transform:scale(1)} }
+@keyframes sketch-wiggle{ 0%{transform:rotate(.1deg) translate(0,0)} 50%{transform:rotate(-.2deg) translate(.2px,.2px)} 100%{transform:rotate(.1deg) translate(0,0)} }
+@keyframes ink-ring{ 0%{box-shadow:0 0 0 0 rgba(0,0,0,.14)} 100%{box-shadow:0 0 0 14px rgba(0,0,0,0)} }
+@keyframes mood-pulse{ 0%{transform:scale(1);box-shadow:0 0 0 0 rgba(0,0,0,0)} 40%{transform:scale(1.04);box-shadow:0 6px 14px rgba(0,0,0,.09)} 100%{transform:scale(1);box-shadow:0 0 0 0 rgba(0,0,0,0)} }
+/* strong pencil fill */
+@keyframes pencil-fill-strong{ 0%{background-size:0% 100%} 70%{background-size:106% 100%} 100%{background-size:100% 100%} }
+@keyframes pencil-run-strong{ 0%{left:6px} 100%{left:calc(100% - 18px)} }

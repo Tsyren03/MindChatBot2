@@ -1,0 +1,168 @@
+/* ==========================================================================
+   Statistics page — pencil, light theme (no auth.css)
+   Works with styles.css but has safe fallbacks.
+   ========================================================================== */
+
+/* ---- Theme & chart tokens ---- */
+:root{
+  /* base (fallbacks if styles.css isn't present) */
+  --paper:#FAF9F6; --card:#FFFFFF;
+  --ink:#1A1A1A; --ink-3:#8A8A8A;
+  --line:#9A9AA1; --line-soft:#E2E3E8;
+  --focus:rgba(0,0,0,.18);
+  --pencil-shadow:0 2px 0 rgba(0,0,0,.05), 0 6px 14px rgba(0,0,0,.05);
+  --btn-line:#9C9C9C; --btn-line-hover:#8C8C8C; --btn-line-active:#7B7B7B;
+
+  /* iOS-ish aliases (fallbacks if main app isn't loaded) */
+  --ios-text: var(--ink);
+  --ios-subtext: var(--ink-3);
+
+  /* brighter chart palette */
+  --chart-bad:#FF3B30;      /* vivid red */
+  --chart-poor:#FF9500;     /* vivid orange */
+  --chart-neutral:#64748B;  /* slate 500 (darker so visible) */
+  --chart-good:#22C55E;     /* emerald 500 */
+  --chart-best:#0A84FF;     /* iOS blue */
+  --chart-grid:var(--line-soft);
+  --chart-axis:var(--ink-3);
+}
+
+/* ---- Page base (allow scrolling) ---- */
+*{ box-sizing:border-box }
+html,body{ height:auto; overflow-y:auto !important; }
+body{
+  margin:0;
+  background:
+    radial-gradient(rgba(0,0,0,.025) 1px, transparent 1px) 0 0/8px 8px,
+    radial-gradient(rgba(0,0,0,.02) 1px, transparent 1px) 4px 4px/8px 8px,
+    var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+
+/* ---- Layout ---- */
+.page-center{
+  min-height:100svh;
+  display:grid;
+  place-items:center;
+  align-content:start;
+  padding:clamp(12px,3vw,32px);
+}
+.section.wide{ width:100%; max-width:1100px; gap:16px }
+
+h2{ text-align:center; margin:0 0 6px; font-weight:900 }
+.sec-title{ margin:12px 0 8px; text-align:center; font-weight:900; color:var(--ink) }
+
+/* ---- Chart cards ---- */
+.charts{ display:flex; flex-wrap:wrap; gap:16px; justify-content:center }
+.chart-block{
+  position:relative; background:var(--card);
+  border:2px solid var(--line); border-radius:18px;
+  padding:14px; box-shadow:var(--pencil-shadow);
+}
+.chart-block::before{
+  content:""; position:absolute; inset:0; border-radius:18px; pointer-events:none;
+  background:
+    radial-gradient(rgba(0,0,0,.012) .8px, transparent 1.2px) 0 0/7px 7px,
+    radial-gradient(rgba(0,0,0,.01) .8px, transparent 1.2px) 3px 4px/9px 9px;
+  opacity:.45; mix-blend-mode:multiply;
+}
+.chart-block::after{
+  content:""; position:absolute; inset:6px; border-radius:14px; pointer-events:none;
+  border:1.5px dashed rgba(0,0,0,.16);
+  animation:sketch-wiggle 3.8s ease-in-out infinite;
+}
+@keyframes sketch-wiggle{
+  0%{transform:rotate(.1deg) translate(0,0)}
+  50%{transform:rotate(-.2deg) translate(.2px,.2px)}
+  100%{transform:rotate(.1deg) translate(0,0)}
+}
+
+.pie-block{ max-width:560px } /* give the main pie more room */
+.lines-block{ max-width:900px; width:100% }
+
+/* Canvas is clean; wrapper provides the frame */
+canvas{ display:block; width:100%; max-width:100%; height:auto; background:transparent; border:0; border-radius:12px }
+
+/* ---- Month toolbar ---- */
+.month-toolbar{
+  display:flex; align-items:center; justify-content:center;
+  gap:10px; margin:6px 0 10px; flex-wrap:wrap;
+}
+
+/* Month chip: match app style (white, not black) */
+.month-label{
+  display:inline-flex; align-items:center; height:38px;
+  padding:0 12px; border-radius:12px;
+  background:#fff !important;
+  color:var(--ios-text) !important;
+  border:2px solid var(--btn-line) !important;
+  box-shadow:var(--pencil-shadow);
+}
+.month-label:focus-visible{
+  outline:3px dashed var(--btn-line); outline-offset:2px;
+}
+
+/* Keep toolbar controls the same height */
+.month-toolbar .stylish-btn{ height:38px; }
+
+/* “This Month” neutral */
+.month-toolbar .stylish-btn[data-variant="gray"]{
+  background:#fff; color:var(--ios-text);
+}
+
+/* Disabled nav buttons: softer + not clickable */
+.month-toolbar .stylish-btn[disabled]{
+  background:#F4F5F6; color:var(--ios-subtext);
+  border-color:var(--btn-line);
+  opacity:.7; cursor:not-allowed; filter:none;
+}
+
+/* ---- Buttons (compact; shared look) ---- */
+.stylish-btn{
+  display:inline-flex; align-items:center; gap:8px; white-space:nowrap; line-height:1.1;
+  appearance:none; position:relative; border:2px solid var(--btn-line); border-radius:14px;
+  padding:10px 14px; font-size:14px; font-weight:900; color:var(--ink); background:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6), var(--pencil-shadow);
+  transition:transform .06s, box-shadow .2s, background .2s, letter-spacing .12s;
+  cursor:pointer;
+}
+.stylish-btn:hover{
+  background:#F6F7F8; border-color:var(--btn-line-hover); letter-spacing:.3px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65), 0 3px 8px rgba(0,0,0,.10), 0 6px 14px rgba(0,0,0,.05)
+}
+.stylish-btn:active{ transform:translateY(1px) scale(.99); border-color:var(--btn-line-active) }
+.stylish-btn:focus-visible{ outline:3px dashed var(--btn-line); outline-offset:2px; box-shadow:0 0 0 6px var(--focus), var(--pencil-shadow) }
+.stylish-btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; filter:grayscale(.1) }
+.stylish-btn::before{
+  content:""; position:absolute; inset:3px; border-radius:inherit; pointer-events:none;
+  border:1px dashed rgba(0,0,0,.26); opacity:.55; mix-blend-mode:multiply; animation:sketch-wiggle 3.8s ease-in-out infinite;
+}
+
+/* ---- “No data” note ---- */
+#monthlyNoData{ text-align:center; margin-top:8px; color:var(--ink-3); font-weight:800 }
+
+/* ---- Submood mini pies ---- */
+#subMoodChartsContainer{ display:flex; flex-wrap:wrap; gap:16px; justify-content:center }
+#subMoodChartsContainer .mini{ width:260px }
+#subMoodChartsContainer .mini h4{ margin:0 0 8px; text-align:center; font-weight:900; color:var(--ink) }
+
+/* ---- Language chips ---- */
+.lang-switch{
+  position:fixed; top:14px; right:14px; z-index:1000;
+  display:flex; gap:8px; padding:0; margin:0;
+}
+.lang-switch button{
+  background:#1c2230; color:#fff; border:2px solid var(--line);
+  border-radius:10px; padding:6px 10px; font-weight:800; cursor:pointer; box-shadow:var(--pencil-shadow);
+}
+.lang-switch button.active{ background:#2A2A2A }
+
+/* ---- Responsive ---- */
+@media (max-width:920px){
+  .lines-block{ max-width:100% }
+  .pie-block{ max-width:100% }
+}
+/* Force a stable height for the monthly line chart across months */
+:root { --linechart-h: 320px; }
+#moodMonthlyLines { height: var(--linechart-h) !important; min-height: var(--linechart-h) !important; }
