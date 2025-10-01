@@ -4,16 +4,73 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title th:text="#{notes.title}">All Notes</title>
+
   <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css" />
   <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css" />
+
   <style>
     .page-center{min-height:100dvh;display:grid;place-items:center;padding:clamp(12px,3vw,32px)}
-    .section.narrow{max-width:900px;width:100%}
-    #notes-list .note{padding:12px;border:1px solid var(--ios-separator);border-radius:12px;background:var(--ios-card);color:var(--ios-text);margin-bottom:10px;}
-    .muted{ color:var(--ios-subtext) }
+    /* Make the card a flex column with a bounded height so the inner list can scroll */
+    .section.narrow{
+      max-width:900px;width:100%;
+      display:flex;flex-direction:column;gap:10px;
+      max-height:clamp(520px,86vh,940px);
+      position:relative;
+    }
+
+    /* Sticky language switch (already sticky) */
     .lang-switch{position:sticky;top:0;z-index:60;display:flex;gap:8px;justify-content:flex-end;padding:10px}
     .lang-switch button{background:#1c2230;color:#fff;border:1px solid var(--ios-separator);border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer}
     .lang-switch button.active{background:var(--ios-blue)}
+
+    /* Sticky title inside the card so it remains visible while list scrolls */
+    .title-bar{
+      position:sticky; top:0; z-index:10;
+      padding:6px 6px 10px;
+      margin:-6px -6px 0;
+      background:linear-gradient(180deg, var(--ios-card, #fff) 85%, rgba(255,255,255,0));
+      border-bottom:2px dashed var(--ios-separator, #E2E3E8);
+    }
+    .title-bar h2{ text-align:center; margin:6px 0 0 0 }
+
+    /* Scrollable notes area */
+    #notes-list{
+      flex:1 1 auto;
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      padding:10px;
+      border:2px solid var(--ios-separator);
+      border-radius:14px;
+      background:var(--ios-card);
+      position:relative;
+      scroll-behavior:smooth;
+    }
+
+    /* Soft top/bottom fade masks while scrolling */
+    #notes-list::before,
+    #notes-list::after{
+      content:""; position:sticky; left:0; right:0; height:16px; z-index:5; display:block;
+      pointer-events:none;
+    }
+    #notes-list::before{ top:0;  background:linear-gradient(to bottom, rgba(0,0,0,.06), transparent) }
+    #notes-list::after { bottom:0; background:linear-gradient(to top,    rgba(0,0,0,.06), transparent) }
+
+    /* Individual notes */
+    #notes-list .note{
+      padding:12px;border:1.5px solid var(--ios-separator);
+      border-radius:12px;background:var(--ios-card);color:var(--ios-text);margin-bottom:10px;
+      box-shadow:0 2px 0 rgba(0,0,0,.04), 0 6px 14px rgba(0,0,0,.05);
+    }
+
+    .muted{ color:var(--ios-subtext) }
+
+    /* Footer actions sit outside the scrolling area */
+    .notes-actions{ margin-top:10px; text-align:center }
+
+    /* Cute scrollbar for the scroll area only */
+    #notes-list::-webkit-scrollbar{ width:10px }
+    #notes-list::-webkit-scrollbar-thumb{ background:rgba(0,0,0,.15); border-radius:10px; border:2px solid var(--ios-card) }
+    #notes-list::-webkit-scrollbar-track{ background:transparent }
   </style>
 </head>
 <body class="bg-grad-peach" th:with="L=${#lists.isEmpty(param.lang) ? #locale.language : param.lang[0]}">
@@ -26,11 +83,19 @@
 
 <main class="page-center">
   <section class="section narrow">
-    <h2 style="text-align:center" th:text="#{notes.title}">All Notes</h2>
-    <div id="notes-list"></div>
-    <div style="margin-top:12px;text-align:center">
+    <div class="title-bar">
+      <h2 th:text="#{notes.title}">All Notes</h2>
+    </div>
+
+    <!-- Scrollable list -->
+    <div id="notes-list" aria-live="polite" aria-busy="true"></div>
+
+    <!-- Fixed (non-scrolling) footer actions -->
+    <div class="notes-actions">
       <a class="stylish-btn" data-variant="gray"
-         th:href="@{/index(lang=${L})}" href="/index">← <span th:text="#{nav.backMain}">Back to Main</span></a>
+         th:href="@{/index(lang=${L})}" href="/index">
+        <span th:text="#{nav.backMain}">Back to Main</span>
+      </a>
     </div>
   </section>
 </main>
@@ -38,10 +103,11 @@
 <script th:inline="javascript">
   const CUR_LANG=(new URLSearchParams(location.search).get('lang'))||/*[[${L}]]*/'en';
   function switchLang(lang){const u=new URL(location.href);u.searchParams.set('lang',lang);location.href=u.toString();}
+
   document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('lang-'+CUR_LANG)?.classList.add('active');
 
-    // keep lang on links (if any new are added dynamically)
+    // keep lang on links
     document.querySelectorAll('a[href^="/"],a[href^="./"],a[href^="../"]').forEach(a=>{
       try{const u=new URL(a.href,location.origin);if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}}catch{}
     });
@@ -54,6 +120,7 @@
     function t(k, d){ return (window.I18N && I18N[k]) || d; }
 
     function renderNotes(arr){
+      notesList.setAttribute('aria-busy','false');
       if (!arr || arr.length === 0){
         notesList.innerHTML = "<p class='muted'>" + (t('notes.empty','No notes available.')) + "</p>";
         return;
@@ -66,23 +133,36 @@
         noteDiv.innerHTML = `<p><strong>${formattedDate}</strong></p><p>${(note.content||'').replace(/\n/g,'<br/>')}</p>`;
         notesList.appendChild(noteDiv);
       });
+
+      // auto-scroll to top when new content rendered (optional; remove if not desired)
+      notesList.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function fetchNotesFromBackend() {
+      notesList.innerHTML = "";
+      notesList.setAttribute('aria-busy','true');
       fetch("/user/notes")
         .then(r=>r.json())
         .then(renderNotes)
-        .catch(error => console.error("Error fetching notes:", error));
+        .catch(error => {
+          console.error("Error fetching notes:", error);
+          notesList.setAttribute('aria-busy','false');
+        });
     }
 
     function fetchNotesForDate(date) {
+      notesList.innerHTML = "";
+      notesList.setAttribute('aria-busy','true');
       fetch(`/user/notes?date=${encodeURIComponent(date)}`)
         .then(r=>r.json())
         .then(data=>{
           const arr = Array.isArray(data) ? data : (data ? [data] : []);
           renderNotes(arr);
         })
-        .catch(error => console.error("Error fetching notes:", error));
+        .catch(error => {
+          console.error("Error fetching notes:", error);
+          notesList.setAttribute('aria-busy','false');
+        });
     }
 
     if (noteDate) { fetchNotesForDate(noteDate); } else { fetchNotesFromBackend(); }

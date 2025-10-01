@@ -11,76 +11,93 @@
     <link rel="icon" type="image/png" sizes="16x16" th:href="@{/icons/favicon-16.png?v=3}" href="/icons/favicon-16.png?v=3">
     <link rel="apple-touch-icon" th:href="@{/icons/apple-touch-icon.png?v=3}" href="/icons/apple-touch-icon.png?v=3">
     <meta name="theme-color" content="#0b0e23">
-
-    <!-- Windows tile -->
     <meta name="msapplication-TileImage" content="/icons/mstile-150x150.png">
     <meta name="msapplication-TileColor" content="#0b0e23">
-
-    <!-- PWA manifest -->
     <link rel="manifest" th:href="@{/icons/site.webmanifest?v=3}" href="/icons/site.webmanifest?v=3">
 
-
-    <!-- App styles -->
+    <!-- App base styles -->
     <link rel="stylesheet" th:href="@{/css/styles.css}" href="/css/styles.css" />
-    <!-- Auth theme utilities -->
     <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css" />
-
-    <style>
-        .page-center{min-height:100dvh;display:grid;place-items:center;padding:clamp(12px,3vw,32px)}
-        .section.narrow{max-width:640px;width:100%}
-        .row{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
-        .kv{font-size:16px;margin:6px 0}
-        .kv b{display:inline-block;min-width:90px}
-        .muted{ color:var(--ios-subtext) }
-        .actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
-        .brand-badge{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
-          background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 18px rgba(0,0,0,.35)}
-        .brand-badge img{width:28px;height:28px;display:block}
-        .profile-head{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:10px}
-    </style>
+    <!-- New profile styles -->
+    <link rel="stylesheet" th:href="@{/css/profile.css?v=2}" href="/css/profile.css?v=2" />
 </head>
+
 <body class="bg-grad-purple">
-<main class="page-center">
-    <section class="section narrow">
-        <div class="profile-head">
-            <div class="brand-badge">
-                <img th:src="@{/icons/app-icon-64.png}" src="/icons/app-icon-64.png" alt="MindChatBot" />
+<main class="profile-page">
+    <section class="profile-card section">
+        <header class="profile-header">
+            <div class="avatar" aria-hidden="true">
+                <span id="profile-initials">MC</span>
+                <img class="avatar-fallback" th:src="@{/icons/app-icon-64.png}" src="/icons/app-icon-64.png" alt="" />
             </div>
-            <h2 style="margin:0">Profile Information</h2>
-        </div>
-
-        <div class="row">
-            <div>
-                <p class="kv"><b>Name:</b> <span id="profile-name" class="muted">Loading…</span></p>
-                <p class="kv"><b>Email:</b> <span id="profile-email" class="muted">Loading…</span></p>
-                <p class="kv"><b>Joined:</b> <span id="profile-joined" class="muted">Loading…</span></p>
+            <div class="title-group">
+                <h1 class="profile-title">Profile Information</h1>
+                <p class="profile-sub" id="profile-sub">—</p>
             </div>
+        </header>
+
+        <div class="profile-grid">
+            <div class="profile-info">
+                <div class="kv"><b>Name</b><span id="profile-name" class="muted skeleton">Loading…</span></div>
+                <div class="kv"><b>Email</b><span id="profile-email" class="muted skeleton">Loading…</span></div>
+                <div class="kv"><b>Joined</b><span id="profile-joined" class="muted skeleton">Loading…</span></div>
+
+                <div class="actions">
+                    <a th:href="@{/index(lang=${#locale.language})}" href="/index" class="stylish-btn" data-variant="gray">← <span th:text="#{nav.main}">Main</span></a>
+                    <a th:href="@{/notes(lang=${#locale.language})}" href="/notes" class="stylish-btn" data-variant="accent"><span th:text="#{nav.viewAllNotes}">All Notes</span></a>
+                    <form th:action="@{/logout}" method="post" class="inline">
+                        <button type="submit" class="stylish-btn" data-variant="gray" th:text="#{buttons.logout}">Logout</button>
+                    </form>
+                </div>
+            </div>
+
+            <aside class="profile-stats">
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon">🔥</span>
+                        <span class="stat-label">Current Streak</span>
+                    </div>
+                    <div class="stat-value" id="stat-streak">0</div>
+                    <small class="stat-hint">Same main mood in a row</small>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon">🎯</span>
+                        <span class="stat-label">Most Frequent</span>
+                    </div>
+                    <div class="stat-value mood-chip" id="stat-most">—</div>
+                    <small class="stat-hint">Last 30 days</small>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon">🗓️</span>
+                        <span class="stat-label">Days Logged</span>
+                    </div>
+                    <div class="stat-value" id="stat-days">0</div>
+                    <small class="stat-hint">This month</small>
+                </div>
+            </aside>
         </div>
 
-        <!-- actions -->
-        <div class="actions">
-            <a th:href="@{/index}" href="/index" class="stylish-btn" data-variant="gray">← Main</a>
-            <a th:href="@{/notes}" href="/notes" class="stylish-btn" data-variant="success">All Notes</a>
+        <div class="heat-strip-wrap">
+            <div class="heat-strip-head">
+                <strong>Last 30 days</strong>
+                <span class="legend">
+          <i class="legend-box legend-bad"></i>Bad
+          <i class="legend-box legend-poor"></i>Poor
+          <i class="legend-box legend-neutral"></i>Neutral
+          <i class="legend-box legend-good"></i>Good
+          <i class="legend-box legend-best"></i>Best
+        </span>
+            </div>
+            <div id="heat-strip" class="heat-strip" aria-label="Mood heat strip"></div>
         </div>
-
     </section>
 </main>
 
-<script>
-    window.addEventListener('DOMContentLoaded', function() {
-      fetch('/user/profile')
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(p => {
-          document.getElementById('profile-name').textContent = p.name || p.email || 'Unknown';
-          document.getElementById('profile-email').textContent = p.email || '-';
-          document.getElementById('profile-joined').textContent = p.joined || '-';
-        })
-        .catch(() => {
-          document.getElementById('profile-name').textContent = '로그인이 필요합니다';
-          document.getElementById('profile-email').textContent = '-';
-          document.getElementById('profile-joined').textContent = '-';
-        });
-    });
-</script>
+<!-- New profile logic -->
+<script th:src="@{/js/profile.js?v=2}" src="/js/profile.js?v=2" defer></script>
 </body>
 </html>

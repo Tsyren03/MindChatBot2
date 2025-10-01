@@ -466,3 +466,226 @@ button[type="submit"]{ box-shadow:var(--pencil-shadow) }
 /* strong pencil fill */
 @keyframes pencil-fill-strong{ 0%{background-size:0% 100%} 70%{background-size:106% 100%} 100%{background-size:100% 100%} }
 @keyframes pencil-run-strong{ 0%{left:6px} 100%{left:calc(100% - 18px)} }
+/* ========================================================================
+   ADD-ON: doodles + gentle animations for empty spaces
+   - Keeps the pencil style, uses light strokes and very low opacity
+   - Respects reduced-motion
+   ======================================================================== */
+
+/* --- Heading sparkle (tiny, playful) --- */
+h2{ position:relative }
+h2::after{
+  content:"✦";
+  position:absolute; right:-6px; top:-6px;
+  font-size:16px; opacity:.65; filter:drop-shadow(0 1px 0 rgba(0,0,0,.15));
+  animation:sparkle 2.4s ease-in-out infinite;
+}
+
+/* --- Calendar / Mood tracker: corner doodles (sun + calendar heart) --- */
+.section.mood-tracker{
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><g fill='none' stroke='%232b2b30' opacity='.14' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='28' cy='28' r='12'/><path d='M28 6v8M28 42v8M6 28h8M42 28h8M12 12l6 6M40 40l6 6M40 16l6-6M12 44l6-6'/></g></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 110'><g fill='none' stroke='%232b2b30' opacity='.16' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='8' y='10' width='104' height='88' rx='10' ry='10'/><path d='M28 12v12M92 12v12M18 32h84'/><path d='M36 52c6-8 16-6 18 4 2-10 12-12 18-4 4 6-2 12-18 24-16-12-22-18-18-24z'/></g></svg>");
+  background-repeat:no-repeat,no-repeat;
+  background-size:120px auto, 160px auto;
+  background-position:left 12px top 12px, right 12px bottom 10px;
+  animation:doodle-drift-1 18s ease-in-out infinite;
+}
+
+/* --- Chat: speech bubble + wave line --- */
+.section.chat-section{
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'><g fill='none' stroke='%232b2b30' opacity='.15' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M24 36h88a12 12 0 0 1 12 12v28a12 12 0 0 1-12 12H56l-18 12 6-12H24a12 12 0 0 1-12-12V48a12 12 0 0 1 12-12z'/><path d='M132 18l3 6 6 2-6 2-3 6-2-6-6-2 6-2zM104 10l2 4 4 1-4 1-2 4-1-4-4-1 4-1z'/></g></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'><g fill='none' stroke='%232b2b30' opacity='.14' stroke-width='2' stroke-linecap='round'><path d='M0 42c24-10 48 10 72 0s48-10 72 0 48 10 72 0'/></g></svg>");
+  background-repeat:no-repeat,no-repeat;
+  background-size:170px auto, 150px auto;
+  background-position:right 12px top 12px, left 10px bottom 10px;
+  animation:doodle-drift-2 16s ease-in-out infinite;
+}
+
+/* --- Tiny floating emoji near chat greeting --- */
+.chat-greeting{ position:relative; padding-right:22px }
+.chat-greeting::after{
+  content:"💬";
+  position:absolute; right:0; top:-2px; font-size:16px; opacity:.8;
+  animation:floaty 3.2s ease-in-out infinite;
+}
+
+/* --- Keyframes --- */
+@keyframes sparkle{
+  0%,100%{ transform:translateY(0) rotate(0) scale(1); opacity:.55 }
+  50%    { transform:translateY(-2px) rotate(10deg) scale(1.25); opacity:.95 }
+}
+@keyframes floaty{
+  0%,100%{ transform:translateY(0) }
+  50%    { transform:translateY(-3px) }
+}
+@keyframes doodle-drift-1{
+  0%  { background-position:left 12px top 12px,   right 12px bottom 10px }
+  50% { background-position:left 16px top 8px,    right 8px  bottom 14px }
+  100%{ background-position:left 12px top 12px,   right 12px bottom 10px }
+}
+@keyframes doodle-drift-2{
+  0%  { background-position:right 12px top 12px,  left 10px bottom 10px }
+  50% { background-position:right 8px  top 16px,  left 14px bottom 6px  }
+  100%{ background-position:right 12px top 12px,  left 10px bottom 10px }
+}
+
+/* --- Responsive sizing for doodles --- */
+@media (max-width:1280px){
+  .section.mood-tracker{ background-size:100px auto, 140px auto }
+  .section.chat-section{ background-size:150px auto, 130px auto }
+}
+@media (max-width:860px){
+  .section.mood-tracker{ background-size:90px auto, 120px auto }
+  .section.chat-section{ background-size:130px auto, 110px auto }
+}
+
+/* --- Respect reduced motion --- */
+@media (prefers-reduced-motion:reduce){
+  h2::after,.chat-greeting::after,.section.mood-tracker,.section.chat-section{ animation:none !important }
+}
+/* ========================================================================
+   EXTRA DOODLES & ANIMATIONS — layered, gentle, pencil-style
+   (Drop this AFTER your existing CSS. No HTML/JS changes required.)
+   ======================================================================== */
+
+/* ===== 1) Mood tracker — more doodles (stars + pencil swirl) ===== */
+.section.mood-tracker{
+  /* add 2 more layers on top of the two existing ones */
+  background-image:
+    /* existing sun */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><g fill='none' stroke='%232b2b30' opacity='.14' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='28' cy='28' r='12'/><path d='M28 6v8M28 42v8M6 28h8M42 28h8M12 12l6 6M40 40l6 6M40 16l6-6M12 44l6-6'/></g></svg>"),
+    /* existing calendar/heart */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 110'><g fill='none' stroke='%232b2b30' opacity='.16' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='8' y='10' width='104' height='88' rx='10' ry='10'/><path d='M28 12v12M92 12v12M18 32h84'/><path d='M36 52c6-8 16-6 18 4 2-10 12-12 18-4 4 6-2 12-18 24-16-12-22-18-18-24z'/></g></svg>"),
+    /* NEW: twinkle stars */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 90'><g fill='none' stroke='%232b2b30' opacity='.12' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 24l4 2-3 4 4-2 2 4 1-4 4-1-4-2 2-4-4 3-3-3z'/><path d='M64 58l3 2-2 3 3-1 2 3v-3l3-1-3-1 1-3-3 2-2-2z'/></g></svg>"),
+    /* NEW: pencil swirl */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 110 110'><g fill='none' stroke='%232b2b30' opacity='.14' stroke-width='2' stroke-linecap='round'><path d='M10 84c28-10 44-2 64-14 16-10 24-28 26-44'/><path d='M92 18l6 10-4 2-2 4-10-6 4-2 2-4z'/></g></svg>");
+  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat;
+  background-size:120px auto, 160px auto, 90px auto, 110px auto;
+  background-position:left 12px top 12px, right 12px bottom 10px, right 18px 36%, left 12px 70%;
+  animation:
+    doodle-drift-1 18s ease-in-out infinite,
+    tracker-parallax 28s ease-in-out infinite;
+}
+@keyframes tracker-parallax{
+  0%   { background-position:left 12px top 12px, right 12px bottom 10px, right 18px 36%, left 12px 70% }
+  50%  { background-position:left 16px top 8px,  right 8px  bottom 14px, right 10px 40%,  left 16px 66% }
+  100% { background-position:left 12px top 12px, right 12px bottom 10px, right 18px 36%, left 12px 70% }
+}
+
+/* Subtle hover sparkle on calendar cells (no JS) */
+.calendar-day{ position:relative; overflow:visible }
+.calendar-day::before{
+  content:"";
+  position:absolute; inset:auto auto -6px -6px; width:10px; height:10px;
+  background:radial-gradient(circle at 50% 50%, rgba(0,0,0,.25) 12%, transparent 13%) 0 0/100% 100% no-repeat;
+  opacity:0; transform:scale(.6) rotate(0deg);
+  filter:blur(.2px);
+  transition:opacity .15s ease, transform .2s ease;
+}
+.calendar-day:hover::before{
+  opacity:.6; transform:scale(1) rotate(12deg);
+  animation:twinkle 1.8s ease-in-out infinite;
+}
+@keyframes twinkle{
+  0%,100%{ transform:scale(1) rotate(10deg) }
+  50%    { transform:scale(1.15) rotate(0deg) }
+}
+
+
+/* ===== 2) Chat — add plane path + extra stars ===== */
+.section.chat-section{
+  /* add 2 more layers (dotted path + tiny stars) */
+  background-image:
+    /* existing bubble */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'><g fill='none' stroke='%232b2b30' opacity='.15' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M24 36h88a12 12 0 0 1 12 12v28a12 12 0 0 1-12 12H56l-18 12 6-12H24a12 12 0 0 1-12-12V48a12 12 0 0 1 12-12z'/><path d='M132 18l3 6 6 2-6 2-3 6-2-6-6-2 6-2zM104 10l2 4 4 1-4 1-2 4-1-4-4-1 4-1z'/></g></svg>"),
+    /* existing wave */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'><g fill='none' stroke='%232b2b30' opacity='.14' stroke-width='2' stroke-linecap='round'><path d='M0 42c24-10 48 10 72 0s48-10 72 0 48 10 72 0'/></g></svg>"),
+    /* NEW: dotted path */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 80'><g fill='none' stroke='%232b2b30' opacity='.12' stroke-width='2' stroke-linecap='round' stroke-dasharray='2 6'><path d='M6 64C48 18 102 86 156 28c18-18 40-18 58-10'/></g></svg>"),
+    /* NEW: tiny stars */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><g fill='none' stroke='%232b2b30' opacity='.12' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 14l3 1-2 3 3-1 1 3 1-3 3-1-3-1 1-3-3 2-2-2z'/><path d='M58 50l2 1-1 2 2-1 1 2v-2l2-1-2-1 1-2-2 1-1-1z'/></g></svg>");
+  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat;
+  background-size:170px auto, 150px auto, 190px auto, 90px auto;
+  background-position:right 12px top 12px, left 10px bottom 10px, left 10px 18%, right 10px 78%;
+  animation:
+    doodle-drift-2 16s ease-in-out infinite,
+    chat-parallax 26s ease-in-out infinite;
+}
+@keyframes chat-parallax{
+  0%  { background-position:right 12px top 12px, left 10px bottom 10px, left 10px 18%, right 10px 78% }
+  50% { background-position:right 8px  top 16px, left 14px bottom 6px,  left 14px 22%, right 8px  74% }
+  100%{ background-position:right 12px top 12px, left 10px bottom 10px, left 10px 18%, right 10px 78% }
+}
+
+/* Paper airplane that flies across the chat box */
+.chat-box{ position:relative }
+.chat-box::before{
+  content:"";
+  position:absolute; top:8px; left:-28px; width:22px; height:22px; pointer-events:none;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'><g fill='%232b2b30' opacity='.9'><path d='M2 14L26 2 16 26l-3-9-9-3z' fill='none' stroke='%232b2b30' stroke-width='2' stroke-linejoin='round'/></g></svg>")
+    center/contain no-repeat;
+  filter:drop-shadow(0 1px 0 rgba(0,0,0,.15));
+  animation:plane-fly 18s linear infinite;
+}
+@keyframes plane-fly{
+  0%   { transform:translate(-10px, 8px) rotate(8deg); opacity:0 }
+  10%  { opacity:.9 }
+  45%  { transform:translate(60%, -4px) rotate(2deg) }
+  70%  { transform:translate(110%, 6px) rotate(-4deg) }
+  100% { transform:translate(140%, 0px) rotate(-6deg); opacity:0 }
+}
+
+/* ===== 3) Journaling — add a third doodle (leaf) + slow drift ===== */
+.section.journaling{
+  background-image:
+    /* existing scribbles */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><g fill='none' stroke='%232b2b30' opacity='.14' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 24l6 3-4 5 6-2 3 6 1-6 6-2-5-3 2-6-5 4-4-4z'/><path d='M60 18l4 8 8 3-8 3-4 8-3-8-8-3 8-3 3-8z'/><path d='M22 90c10-4 26-6 38 2'/><path d='M74 88c6 4 16 7 28 6'/></g></svg>"),
+    /* existing curve/arrow */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60'><g fill='none' stroke='%232b2b30' opacity='.16' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M10 48C40 40 80 42 148 30'/><path d='M140 22l12 8-12 8-8-6z'/><path d='M132 24v20'/><path d='M140 22l12 8M140 38l12-8'/></g></svg>"),
+    /* NEW: leafy flourish */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 100'><g fill='none' stroke='%232b2b30' opacity='.14' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M10 72c18-8 34-6 48-18 16-14 20-30 26-44'/><path d='M84 10c6 10 16 18 30 22'/><path d='M84 10c-4 8-10 14-18 18'/></g></svg>");
+  background-repeat:no-repeat,no-repeat,no-repeat;
+  background-size:140px auto, 170px auto, 160px auto;
+  background-position:left 12px bottom 10px, right 14px top 12px, center bottom 18px;
+  animation:journal-parallax 24s ease-in-out infinite;
+}
+@keyframes journal-parallax{
+  0%  { background-position:left 12px bottom 10px, right 14px top 12px, center bottom 18px }
+  50% { background-position:left 16px bottom 6px,  right 10px top 16px,  center bottom 22px }
+  100%{ background-position:left 12px bottom 10px, right 14px top 12px, center bottom 18px }
+}
+
+/* ===== 4) Chat greeting — add tiny sparkle companion ===== */
+.chat-greeting::before{
+  content:"✨";
+  position:absolute; left:-18px; top:-2px; font-size:14px; opacity:.65;
+  animation:sparkle 2.8s ease-in-out infinite .4s;
+}
+
+/* ===== 5) Language chip — wavy underline on hover ===== */
+.lang-switch a{
+  position:relative; overflow:visible;
+}
+.lang-switch a::after{
+  content:"";
+  position:absolute; left:12px; right:12px; bottom:6px; height:8px; pointer-events:none;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='8' viewBox='0 0 160 8'><path d='M0 6c12-8 24 8 36 0s24-8 36 0 24 8 36 0 24-8 36 0' fill='none' stroke='%23ff8fa3' stroke-width='2' stroke-linecap='round'/></svg>")
+    left/0 100% no-repeat;
+  opacity:0; transition:background-size .35s ease, opacity .2s ease;
+}
+.lang-switch a:hover::after{ background-size:100% 100%; opacity:1 }
+
+/* ===== 6) Respect reduced motion ===== */
+@media (prefers-reduced-motion:reduce){
+  .section.mood-tracker,
+  .section.chat-section,
+  .section.journaling,
+  .chat-box::before,
+  .lang-switch a::after,
+  .calendar-day:hover::before{ animation:none !important }
+}

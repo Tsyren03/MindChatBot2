@@ -120,10 +120,10 @@
         </div>
     </section>
 </main>
-
-<!-- 1) Inject ALL submood labels into window.I18N BEFORE app script executes -->
 <script th:inline="javascript">
+    // Build a JS dictionary from server messages for the current locale
     window.I18N = Object.assign({}, window.I18N || {}, {
+      /* ---- Submoods (used by buttons & charts) ---- */
       'mood.sub.proud':       /*[[#{mood.sub.proud}]]*/       'Proud',
       'mood.sub.grateful':    /*[[#{mood.sub.grateful}]]*/    'Grateful',
       'mood.sub.energetic':   /*[[#{mood.sub.energetic}]]*/   'Energetic',
@@ -148,7 +148,52 @@
       'mood.sub.sad':         /*[[#{mood.sub.sad}]]*/         'Sad',
       'mood.sub.lonely':      /*[[#{mood.sub.lonely}]]*/      'Lonely',
       'mood.sub.anxious':     /*[[#{mood.sub.anxious}]]*/     'Anxious',
-      'mood.sub.hopeless':    /*[[#{mood.sub.hopeless}]]*/    'Hopeless'
+      'mood.sub.hopeless':    /*[[#{mood.sub.hopeless}]]*/    'Hopeless',
+
+      /* ---- Main mood labels used inside JS popups ---- */
+      'mood.bad':     /*[[#{mood.bad}]]*/     'Bad',
+      'mood.poor':    /*[[#{mood.poor}]]*/    'Poor',
+      'mood.neutral': /*[[#{mood.neutral}]]*/ 'Neutral',
+      'mood.good':    /*[[#{mood.good}]]*/    'Good',
+      'mood.best':    /*[[#{mood.best}]]*/    'Best',
+
+      /* ---- JS aliases (your script uses unprefixed keys) ---- */
+      'write_something':      /*[[#{js.write_something}]]*/      'Please write something first.',
+      'login_required':       /*[[#{js.login_required}]]*/       'Please log in to save notes.',
+      'failed_save_note':     /*[[#{js.failed_save_note}]]*/     'Failed to save note.',
+      'failed_save_mood':     /*[[#{js.failed_save_mood}]]*/     'Failed to save mood.',
+      'unexpected_server':    /*[[#{js.unexpected_server}]]*/    'Server returned an unexpected response while saving the note.',
+      'network_note':         /*[[#{js.network_note}]]*/         'An error occurred while saving the note.',
+      'server_error':         /*[[#{js.server_error}]]*/         'Server error occurred.',
+      'note_saved':           /*[[#{js.note_saved}]]*/           'Note saved.',
+      'mood_saved':           /*[[#{js.mood_saved}]]*/           'Your mood has been saved.',
+      'select_date_first':    /*[[#{js.select_date_first}]]*/    'Please select a date first.',
+
+      /* ---- AI suggestion popup (existing) ---- */
+      'popup_title':          /*[[#{js.mood_popup_title}]]*/     'AI Mood Suggestion',
+      'popup_for':            /*[[#{js.mood_popup_for}]]*/       'AI recognized your mood for',
+      'mood_popup_confirm':   /*[[#{js.mood_popup_confirm}]]*/   'Save this?',
+      'popup_save':           /*[[#{js.mood_popup_save}]]*/      'Save',
+      'popup_cancel':         /*[[#{js.mood_popup_cancel}]]*/    'Cancel',
+      'close':                /*[[#{close}]]*/                   'Close',
+
+      /* ---- NEW: Streak modal ---- */
+      'streak.title.neg':     /*[[#{streak.title.neg}]]*/        'Awareness Check-in',
+      'streak.title.pos':     /*[[#{streak.title.pos}]]*/        'Gratitude Moment',
+      'streak.title.neu':     /*[[#{streak.title.neu}]]*/        'Gentle Nudge',
+      'streak.msg.neg':       /*[[#{streak.msg.neg}]]*/          'You’ve had a similar mood lately.',
+      'streak.msg.pos':       /*[[#{streak.msg.pos}]]*/          'Nice streak — keep it going!',
+      'streak.msg.neu':       /*[[#{streak.msg.neu}]]*/          'It looks like a similar state continues.',
+      'streak.sugg.neg':      /*[[#{streak.sugg.neg}]]*/         'Try a 60-second grounding: breathe in 4 • hold 4 • out 6 — then note one thing that feels safe right now.',
+      'streak.sugg.pos':      /*[[#{streak.sugg.pos}]]*/         'Write one thing you’re grateful for today. Tiny is perfect.',
+      'streak.sugg.neu':      /*[[#{streak.sugg.neu}]]*/         'Pick a tiny action: 1 glass of water, 3 deep breaths, or a 2-minute stretch.',
+      'streak.btn.grat':      /*[[#{streak.btn.grat}]]*/         'Write gratitude',
+      'streak.btn.ground':    /*[[#{streak.btn.ground}]]*/       'Do 60s grounding',
+      'streak.btn.tiny':      /*[[#{streak.btn.tiny}]]*/         'Try tiny habit',
+      'streak.btn.later':     /*[[#{streak.btn.later}]]*/        'Remind me later',
+      'streak.breath.caption':/*[[#{streak.breath.caption}]]*/   'Inhale 4 • Hold 4 • Exhale 6',
+      'streak.template.grat': /*[[#{streak.template.grat}]]*/    'Today I’m grateful for:',
+      'streak.template.tiny': /*[[#{streak.template.tiny}]]*/    'Tiny habit I’ll try:'
     });
 </script>
 

@@ -1,54 +1,87 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
-    <title>회원 가입</title>
+    <title th:text="#{auth.signup.title}">Sign up</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- icons/manifest + Bootstrap… -->
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css" />
+
+    <!-- small page-only styling for the language pills -->
+    <style>
+        .lang-switch{position:fixed;top:16px;right:16px;z-index:60;display:flex;gap:8px}
+        .lang-switch button{background:#2A2A2A;color:#fff;border:1px solid #E2E3E8;border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer}
+        .lang-switch button.active{filter:brightness(.92)}
+    </style>
 </head>
-<body class="bg-grad-peach">
+<body class="bg-grad-peach" th:with="L=${#lists.isEmpty(param.lang) ? #locale.language : param.lang[0]}">
+
+<nav class="lang-switch" role="navigation" aria-label="Language">
+    <button id="lang-en" onclick="switchLang('en')">EN</button>
+    <button id="lang-ko" onclick="switchLang('ko')">한국어</button>
+    <button id="lang-ru" onclick="switchLang('ru')">RU</button>
+</nav>
+
 <section class="auth-page">
     <div class="auth-card">
         <div class="card-body p-4 p-md-5">
-            <div class="auth-head">
+            <div class="auth-head mb-2">
                 <div class="brand-badge">
                     <img th:src="@{/icons/app-icon-64.png}" src="/icons/app-icon-64.png" alt="MindChatBot" width="40" height="40" />
                 </div>
                 <div>
-                    <h1 class="h4 auth-title">회원 가입</h1>
-                    <p class="auth-sub mb-0">서비스 사용을 위한 회원 등록</p>
+                    <h1 class="h4 auth-title" th:text="#{auth.signup.title}">Sign up</h1>
+                    <p class="auth-sub mb-0" th:text="#{auth.signup.subtitle}">Create an account to continue.</p>
                 </div>
             </div>
 
-            <form class="needs-validation mt-3" th:action="@{/user/register}" method="POST" novalidate>
+            <form class="needs-validation mt-3" th:action="@{/signup}" method="POST" novalidate>
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <input type="hidden" name="lang" th:value="${L}"/>
 
+                <!-- Name -->
                 <div class="form-group">
-                    <label for="signup-email" class="form-label">이메일</label>
-                    <input id="signup-email" name="email" type="email" class="form-control"
-                           placeholder="name@example.com" required
-                           autocapitalize="none" autocomplete="username" spellcheck="false" />
-                    <div class="invalid-feedback">유효한 이메일을 입력하세요.</div>
+                    <label for="signup-name" class="form-label" th:text="#{auth.name}">Name</label>
+                    <input id="signup-name" name="name" type="text" class="form-control"
+                           th:placeholder="#{auth.name.placeholder}" placeholder="Your name" required
+                           autocomplete="name" />
+                    <div class="invalid-feedback" th:text="#{auth.name.required}">Please enter your name.</div>
                 </div>
 
+                <!-- Email -->
                 <div class="form-group">
-                    <label for="signup-password" class="form-label">비밀번호</label>
+                    <label for="signup-email" class="form-label" th:text="#{auth.email}">Email</label>
+                    <input id="signup-email" name="email" type="email" class="form-control"
+                           th:placeholder="#{auth.email.placeholder}" placeholder="name@example.com" required
+                           autocapitalize="none" spellcheck="false" autocomplete="email" />
+                    <div class="invalid-feedback" th:text="#{auth.email.invalid}">Enter a valid email.</div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="signup-password" class="form-label" th:text="#{auth.password}">Password</label>
                     <div class="input-affix">
                         <input id="signup-password" name="password" type="password" class="form-control"
-                               placeholder="최소 8자" minlength="8" required autocomplete="new-password" />
+                               th:placeholder="#{auth.password.placeholder}" placeholder="Use at least 8 characters."
+                               minlength="8" required autocomplete="new-password" />
                         <button type="button" class="toggle-eye"
                                 data-toggle="password" data-target="signup-password"
-                                aria-label="비밀번호 표시" aria-pressed="false">👁️</button>
+                                th:attr="aria-label=#{auth.password.show}"
+                                aria-pressed="false">👁️</button>
                     </div>
-                    <div class="invalid-feedback">8자 이상 비밀번호를 입력하세요.</div>
+                    <div class="invalid-feedback" th:text="#{auth.password.min}">Use at least 8 characters.</div>
                 </div>
 
-                <button class="btn-brand mt-2" type="submit">가입하기</button>
+                <button class="btn-brand mt-2" type="submit" th:text="#{auth.signup}">Sign up</button>
 
-                <p class="helper mt-3 mb-0 text-center">
-                    이미 계정이 있으신가요? <a th:href="@{/login}" href="/login">로그인</a>
+                <div class="divider my-3" th:text="#{auth.or}">or</div>
+
+                <!-- Footer link -->
+                <p class="helper text-center mb-0">
+                    <span th:text="#{auth.already}">Already have an account?</span>
+                    —
+                    <a th:href="@{/login(lang=${L})}" href="/login" th:text="#{auth.login}">Login</a>
                 </p>
             </form>
         </div>
@@ -56,5 +89,34 @@
 </section>
 
 <script th:src="@{/js/auth.js}" src="/js/auth.js" defer></script>
+
+<!-- localize eye-toggle labels -->
+<script th:inline="javascript">
+    const CUR_LANG=(new URLSearchParams(location.search).get('lang'))||/*[[${L}]]*/'en';
+    function switchLang(lang){const u=new URL(location.href);u.searchParams.set('lang',lang);location.href=u.toString();}
+    document.addEventListener('DOMContentLoaded',()=>{
+      document.getElementById('lang-'+CUR_LANG)?.classList.add('active');
+      // keep lang on links
+      document.querySelectorAll('a[href^="/"],a[href^="./"],a[href^="../"]').forEach(a=>{
+        try{const u=new URL(a.href,location.origin);if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}}catch{}
+      });
+
+      // i18n eye toggle labels
+      const TXT_SHOW = /*[[#{auth.password.show}]]*/ 'Show password';
+      const TXT_HIDE = /*[[#{auth.password.hide}]]*/ 'Hide password';
+      document.querySelectorAll('.toggle-eye[data-toggle="password"]').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const id = btn.getAttribute('data-target');
+          const input = document.getElementById(id);
+          if(!input) return;
+          const to = input.type === 'password' ? 'text' : 'password';
+          input.type = to;
+          const pressed = to === 'text';
+          btn.setAttribute('aria-pressed', String(pressed));
+          btn.setAttribute('aria-label', pressed ? TXT_HIDE : TXT_SHOW);
+        });
+      });
+    });
+</script>
 </body>
 </html>

@@ -7,6 +7,7 @@
    - A11y/UX: keyboard focus for calendar cells, ESC/overlay close for popup
    - Pencil “coloring” animation on submood save (.save-pulse) with final paint
    - Pastel mood palettes
+   - Streak modal (gratitude/awareness) — not a chat message
    ====================================================================== */
 "use strict";
 
@@ -20,11 +21,11 @@ const CATEGORY_BASE = {
 };
 const MOOD_COLOR_MAP = {
   best:{
-    proud:     '#AFECE6', // teal pastel
-    grateful:  '#BDE4FF', // sky pastel
-    energetic: '#C6D3FF', // indigo pastel
-    excited:   '#DCCBFF', // violet pastel
-    fulfilled: '#FFC9E9'  // pink pastel
+    proud:     '#AFECE6',
+    grateful:  '#BDE4FF',
+    energetic: '#C6D3FF',
+    excited:   '#DCCBFF',
+    fulfilled: '#FFC9E9'
   },
   good:{
     calm:       '#D8F6E9',
@@ -141,6 +142,189 @@ async function initIdentity() {
 function storageKey() { return CHAT_NS + IDENTITY.key; }
 function getUserIdFromToken() { return { userId: IDENTITY.key, token: IDENTITY.token }; }
 
+/* ==================== Streak detection (main mood only) ==================== */
+/* Trigger from the 3rd day onward and keep showing on 4,5,6,7… */
+const MOOD_STREAK_THRESHOLD = 3; // >= 3 is a streak
+const NEGATIVE_MOODS = new Set(['bad','poor']);
+const POSITIVE_MOODS = new Set(['good','best']);
+const NEUTRAL_MOODS  = new Set(['neutral']);
+
+function ymdStr(y, m1, d){ return `${y}-${String(m1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function prettyMainMood(m){
+  return ({ bad:t('mood.bad','Bad'), poor:t('mood.poor','Poor'),
+            neutral:t('mood.neutral','Neutral'),
+            good:t('mood.good','Good'), best:t('mood.best','Best') })[m] || capitalize(m);
+}
+function moodHistoryKey(){ return `moodHistory_v1_${IDENTITY.key}`; }
+function moodPromptKey(){ return `moodStreakPrompt_v1_${IDENTITY.key}`; }
+
+function readMoodHistory(){
+  try { return JSON.parse(localStorage.getItem(moodHistoryKey()) || '[]'); } catch { return []; }
+}
+function writeMoodHistory(arr){
+  try { localStorage.setItem(moodHistoryKey(), JSON.stringify(arr.slice(-180))); } catch {}
+}
+function upsertMoodAndComputeStreak(dateStr, main){
+  let hist = readMoodHistory();
+  hist = hist.filter(e => e.d !== dateStr);
+  hist.push({ d: dateStr, m: main });
+  hist.sort((a,b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+  writeMoodHistory(hist);
+  let streak = 0;
+  for (let i = hist.length - 1; i >= 0; i--){
+    if (hist[i].m === main) streak++; else break;
+  }
+  return streak;
+}
+function seedMoodHistoryFromServer(monthItems, year, zeroBasedMonth){
+  if (!Array.isArray(monthItems)) return;
+  let hist = readMoodHistory();
+  monthItems.forEach(it => {
+    if (!it || !it.day || !it.emoji) return;
+    const d = ymdStr(year, zeroBasedMonth + 1, it.day);
+    hist = hist.filter(e => e.d !== d);
+    hist.push({ d, m: it.emoji });
+  });
+  hist.sort((a,b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+  writeMoodHistory(hist);
+}
+
+/* ---------- Streak modal (popup window) ---------- */
+(function ensureStreakStyles(){
+  if (document.getElementById("streak-popup-css")) return;
+  const link = document.createElement("link");
+  link.id = "streak-popup-css";
+  link.rel = "stylesheet";
+  link.href = "/css/streak-popup.css?v=1";
+  document.head.appendChild(link);
+})();
+
+function closeStreakModal(){
+  const overlay = document.getElementById("streak-modal-overlay");
+  overlay?.classList.add("closing");
+  setTimeout(()=> overlay?.remove(), 220);
+}
+
+function prefillJournal(dateStr, template){
+  const note = document.getElementById("note-content");
+  const date = document.getElementById("note-date");
+  try {
+    if (dateStr && date) date.value = dateStr;
+    if (note) {
+      const prev = (note.value || "").trim();
+      note.value = prev ? (prev + "\n\n" + template) : template;
+      note.focus();
+      note.setSelectionRange(note.value.length, note.value.length);
+    }
+    const journaling = document.getElementById("journaling");
+    journaling?.scrollIntoView({ behavior:"smooth", block:"start" });
+  } catch {}
+}
+
+/* —— FLEXIBLE COUNT: always show current streak number on the popup —— */
+function openStreakModal({ main, streak, dateStr }){
+  document.getElementById("streak-modal-overlay")?.remove();
+
+  const type = NEGATIVE_MOODS.has(main) ? "negative" :
+               POSITIVE_MOODS.has(main) ? "positive" : "neutral";
+
+  const moodLabel = prettyMainMood(main);
+  const title = ({
+    negative: t('streak.title.neg','Awareness Check-in'),
+    positive: t('streak.title.pos','Gratitude Moment'),
+    neutral:  t('streak.title.neu','Gentle Nudge')
+  })[type];
+
+  // Base subtitle text (localized, no number inside)
+  const baseSub = ({
+    negative: t('streak.msg.neg', `You've logged ${moodLabel} for ${streak} days in a row.`),
+    positive: t('streak.msg.pos',  `Nice streak — ${moodLabel} for ${streak} days!`),
+    neutral:  t('streak.msg.neu',  `You’ve been feeling ${moodLabel} for ${streak} days.`)
+  })[type];
+
+  // Neutral numeric chip that works across languages (🔥 3, 4, 5, …)
+  const N = Number(streak || 0).toLocaleString(LANG || 'en');
+  const countChip = `<span class="streak-count-bubble" aria-label="streak">🔥 ${N}</span>`;
+
+  const suggestion = ({
+    negative: t('streak.sugg.neg','Try a 60-second grounding: breathe in 4 • hold 4 • out 6 — and note one thing that feels safe right now.'),
+    positive: t('streak.sugg.pos','Capture one thing you’re grateful for today. Tiny is perfect.'),
+    neutral:  t('streak.sugg.neu','Pick a tiny action: 1 glass of water, 3 deep breaths, or a 2-minute stretch.')
+  })[type];
+
+  const overlay = document.createElement("div");
+  overlay.id = "streak-modal-overlay";
+  overlay.className = "streak-overlay";
+  overlay.setAttribute("role","dialog");
+  overlay.setAttribute("aria-modal","true");
+
+  const card = document.createElement("div");
+  card.className = `streak-card ${type}`;
+  card.innerHTML = `
+    <div class="streak-sketch"></div>
+    <button class="streak-close" type="button" aria-label="${t('close','Close')}">×</button>
+    <div class="streak-icon">${type==='positive'?'🌈': type==='negative'?'🫶':'🧭'}</div>
+    <h3 class="streak-title">${title}</h3>
+    <div class="streak-sub">${baseSub} ${countChip}</div>
+    <div class="streak-tip">${suggestion}</div>
+
+    <div class="streak-actions">
+      ${
+        type==='positive'
+          ? `<button class="stylish-btn streak-primary" type="button" data-act="gratitude">${t('streak.btn.grat','Write gratitude')}</button>`
+          : type==='negative'
+            ? `<button class="stylish-btn streak-primary" type="button" data-act="ground">${t('streak.btn.ground','Do 60s grounding')}</button>`
+            : `<button class="stylish-btn streak-primary" type="button" data-act="tiny">${t('streak.btn.tiny','Try tiny habit')}</button>`
+      }
+      <button class="stylish-btn" data-variant="gray" type="button" data-act="later">${t('streak.btn.later','Remind me later')}</button>
+    </div>
+
+    <div class="streak-mini hidden" id="streak-mini-exercise">
+      <div class="breath-circle" aria-hidden="true"></div>
+      <div class="breath-caption">${t('streak.breath.caption','Inhale 4 • Hold 4 • Exhale 6')}</div>
+    </div>
+  `;
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  function onOverlayClick(e){ if (e.target === overlay) closeStreakModal(); }
+  function onEsc(e){ if (e.key === "Escape") { closeStreakModal(); document.removeEventListener("keydown", onEsc); } }
+
+  overlay.addEventListener("click", onOverlayClick);
+  document.addEventListener("keydown", onEsc);
+  card.querySelector(".streak-close").addEventListener("click", closeStreakModal);
+
+  const mini = card.querySelector("#streak-mini-exercise");
+
+  card.querySelectorAll(".streak-actions .stylish-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const act = btn.getAttribute("data-act");
+      if (act === "gratitude") {
+        prefillJournal(dateStr, t('streak.template.grat','Today I’m grateful for: '));
+        closeStreakModal();
+      } else if (act === "ground") {
+        mini?.classList.remove("hidden");
+        mini?.scrollIntoView({ behavior:"smooth", block:"center" });
+      } else if (act === "tiny") {
+        prefillJournal(dateStr, t('streak.template.tiny','Tiny habit I’ll try: '));
+        closeStreakModal();
+      } else {
+        closeStreakModal();
+      }
+    });
+  });
+}
+
+/* Keep prompting once per day when the streak is at/above threshold (3,4,5,…) */
+async function maybePromptForStreak(main, streak, dateStr){
+  if (streak < MOOD_STREAK_THRESHOLD) return;
+  try { if (localStorage.getItem(moodPromptKey()) === dateStr) return; } catch {}
+  openStreakModal({ main, streak, dateStr });
+  try { localStorage.setItem(moodPromptKey(), dateStr); } catch {}
+}
+/* ================== END streak logic ================== */
+
 /* ===== Contrast + coloring ===== */
 function getReadableTextColor(hex){
   if(!hex) return '#111';
@@ -182,9 +366,8 @@ function setDayMoodState(el, mainMood, subMood, color){
 /* ===== Pencil-fill with “finalize paint” ===== */
 function runPencilFill(el, finalColor){
   if (!el) return;
-
   el.classList.remove('save-pulse');
-  void el.offsetWidth;               // reflow to restart
+  void el.offsetWidth;
   el.classList.add('save-pulse');
 
   const finalize = () => {
@@ -210,7 +393,7 @@ function runPencilFill(el, finalColor){
     }
   };
   el.addEventListener('animationend', handler);
-  setTimeout(finalize, 950); // safety net
+  setTimeout(finalize, 950);
 }
 
 /* ===== Dedupe guards ===== */
@@ -362,6 +545,11 @@ function showRecognizedMoodPopup(moodObj) {
 
     await addBotMessageTyping((data && typeof data.reply === "string" && data.reply.trim()) ? data.reply.trim() : t('mood_saved','Your mood has been saved.'));
 
+    /* streak modal after save */
+    const savedDate = ymdStr(payload.year, payload.month, payload.day);
+    const streakA = upsertMoodAndComputeStreak(savedDate, payload.emoji);
+    await maybePromptForStreak(payload.emoji, streakA, savedDate);
+
     __moodSaveBusy = false;
     popup.remove();
   };
@@ -439,7 +627,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       const content = (contentEl?.value || "").trim();
       if (!content) { alert(t('write_something','Please write something first.')); __noteSubmitBusy = false; return; }
 
-      // ensure date
       let date = (dateEl?.value || "").trim();
       if (!date) {
         date = new Date().toISOString().slice(0, 10);
@@ -539,6 +726,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const savedMoods = await fetchMoods(currentYear, currentMonth);
 
+    /* seed client-side streak history */
+    seedMoodHistoryFromServer(savedMoods, currentYear, currentMonth);
+
     const nodes = [];
     for (let i = 0; i < startDay; i++) {
       const emptyCell = document.createElement("div");
@@ -551,7 +741,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       dayElement.classList.add("calendar-day");
       dayElement.textContent = day;
       dayElement.dataset.day = day;
-      dayElement.tabIndex = 0; // keyboard focusable
+      dayElement.tabIndex = 0;
 
       const mood = Array.isArray(savedMoods) ? savedMoods.find(m => m.day === day) : null;
       if (mood) {
@@ -816,6 +1006,11 @@ async function saveMoodWithSubMoodLive(emoji, subMood) {
 
   const replyData = await res.json().catch(()=> ({}));
   await addBotMessageTyping(replyData.reply || t('mood_saved','Your mood has been saved.'));
+
+  /* streak modal after save */
+  const savedDate = ymdStr(mood.year, mood.month, mood.day);
+  const streakB = upsertMoodAndComputeStreak(savedDate, mood.emoji);
+  await maybePromptForStreak(mood.emoji, streakB, savedDate);
 }
 
 /* ===== Chat send ===== */

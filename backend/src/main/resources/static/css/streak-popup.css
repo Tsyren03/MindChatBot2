@@ -1,0 +1,110 @@
+/* ======================================================================
+   Streak Modal (gratitude / awareness) — pencil, light theme
+   ====================================================================== */
+:root{
+  --streak-overlay: rgba(0,0,0,.26);
+  --streak-bg: var(--ios-card, #fff);
+  --streak-ink: var(--ios-text, #1A1A1A);
+  --streak-sub: var(--ios-subtext, #8A8A8A);
+  --streak-line: var(--line, #9A9AA1);
+  --streak-shadow: var(--pencil-shadow, 0 2px 0 rgba(0,0,0,.05), 0 6px 14px rgba(0,0,0,.05));
+}
+
+.streak-overlay{
+  position:fixed; inset:0; z-index:10000;
+  background:var(--streak-overlay);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display:flex; align-items:center; justify-content:center;
+  animation:fade-in .18s ease-out both;
+}
+.streak-overlay.closing{ animation:fade-out .18s ease-in forwards }
+
+.streak-card{
+  position:relative; width:min(560px, 94vw);
+  background:var(--streak-bg); color:var(--streak-ink);
+  border:2px solid var(--streak-line); border-radius:18px;
+  padding:18px 16px 16px; text-align:center;
+  box-shadow: var(--streak-shadow);
+  animation:paper-pop .28s ease both;
+  overflow:hidden;
+}
+.streak-card .streak-sketch{
+  pointer-events:none; position:absolute; inset:6px; border-radius:14px;
+  border:1.5px dashed rgba(0,0,0,.16);
+  animation:sketch-wiggle 3.8s ease-in-out infinite;
+}
+.streak-card .streak-close{
+  position:absolute; top:8px; right:8px;
+  width:32px; height:32px; border-radius:10px;
+  border:2px solid var(--streak-line); background:#fff; color:var(--streak-ink);
+  font-weight:900; cursor:pointer; line-height:1;
+  box-shadow: var(--streak-shadow);
+}
+.streak-card .streak-close:focus-visible{ outline:3px dashed var(--streak-line); outline-offset:2px }
+
+.streak-card .streak-icon{
+  font-size:32px; margin:4px 0 6px;
+}
+.streak-card .streak-title{
+  margin:0; font-size:20px; font-weight:900;
+  letter-spacing:.2px; text-shadow:0 .5px 0 rgba(0,0,0,.14);
+}
+.streak-card .streak-sub{
+  margin:6px 0 8px; color:var(--streak-sub); font-weight:800;
+}
+.streak-card .streak-tip{
+  margin:0 auto 12px; max-width:48ch; font-size:15px;
+}
+
+.streak-card .streak-actions{
+  display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:8px;
+}
+.streak-card .streak-primary{
+  background:#fff;
+}
+
+/* subtle accent halo by type */
+.streak-card.positive::after,
+.streak-card.negative::after,
+.streak-card.neutral::after{
+  content:""; position:absolute; inset:-2px; border-radius:20px; pointer-events:none;
+  background:
+    radial-gradient(60% 40% at 50% -10%,
+      color-mix(in oklab, var(--halo, #9aa3ae) 30%, transparent) 0,
+      transparent 70%);
+  opacity:.55;
+}
+.streak-card.positive{ --halo: #0A84FF }
+.streak-card.negative{ --halo: #FF3B30 }
+.streak-card.neutral { --halo: #64748B }
+
+/* mini breathing exercise */
+.streak-mini{
+  margin:10px auto 0; max-width:380px; padding:12px;
+  border:2px solid var(--streak-line); border-radius:14px; background:#fff;
+  box-shadow: var(--streak-shadow);
+}
+.streak-mini.hidden{ display:none }
+.breath-circle{
+  width:120px; height:120px; margin:0 auto 8px; border-radius:50%;
+  border:2px dashed rgba(0,0,0,.22);
+  animation:breath 6s ease-in-out infinite;
+  background:
+    radial-gradient(rgba(0,0,0,.03) 1px, transparent 1px) 0 0/8px 8px,
+    radial-gradient(rgba(0,0,0,.02) 1px, transparent 1px) 4px 4px/8px 8px,
+    #fff;
+}
+.breath-caption{ color:var(--streak-sub); font-weight:800; font-size:13px }
+
+/* motions */
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+@keyframes fade-out{from{opacity:1}to{opacity:0}}
+@keyframes paper-pop{ 0%{transform:scale(.98);opacity:0} 100%{transform:scale(1);opacity:1} }
+@keyframes sketch-wiggle{ 0%{transform:rotate(.1deg) translate(0,0)} 50%{transform:rotate(-.2deg) translate(.2px,.2px)} 100%{transform:rotate(.1deg) translate(0,0)} }
+@keyframes breath{
+  0%{ transform:scale(0.86) }
+  40%{ transform:scale(1.06) }
+  70%{ transform:scale(0.9) }
+  100%{ transform:scale(0.86) }
+}

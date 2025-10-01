@@ -4,19 +4,48 @@
     <meta charset="UTF-8" />
     <title th:text="#{auth.login}">Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- icons & manifest ... (unchanged) -->
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" th:href="@{/css/auth.css}" href="/css/auth.css" />
 
-    <!-- keep this tiny style local to page -->
+    <!-- page-specific styles: lock page scroll, center section, let card scroll if needed -->
     <style>
-        .lang-switch{position:sticky;top:0;z-index:60;display:flex;gap:8px;justify-content:flex-end;padding:10px}
-        .lang-switch button{background:#2A2A2A;color:#fff;border:1px solid #E2E3E8;border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer}
+        /* language pills */
+        .lang-switch{
+          position:fixed;             /* fixed so it doesn't affect layout height */
+          top:16px; right:16px; z-index:60;
+          display:flex; gap:8px; justify-content:flex-end; padding:0;
+        }
+        .lang-switch button{
+          background:#2A2A2A;color:#fff;border:1px solid #E2E3E8;
+          border-radius:10px;padding:6px 10px;font-weight:800;cursor:pointer
+        }
         .lang-switch button.active{filter:brightness(.92)}
+
+        /* --- no page scroll only on this page --- */
+        html, body { height:100%; }
+        body.auth-noscroll { overflow:hidden; }          /* lock page scroll */
+
+        /* center section; use viewport units for mobile-friendly height */
+        .auth-page{
+          min-height:100dvh;
+          min-height:100svh;                             /* modern mobile */
+          display:grid; place-items:center;
+          padding:0 16px;
+        }
+        /* if content grows, only the card scrolls */
+        .auth-card{
+          width:min(92vw,560px);
+          max-height:calc(100svh - 64px);
+          overflow:auto;
+          -webkit-overflow-scrolling:touch;
+        }
     </style>
 </head>
-<body class="bg-grad-purple" th:with="L=${#lists.isEmpty(param.lang) ? #locale.language : param.lang[0]}">
+
+<!-- add 'auth-noscroll' to lock page scroll just here -->
+<body class="bg-grad-purple auth-noscroll"
+      th:with="L=${#lists.isEmpty(param.lang) ? #locale.language : param.lang[0]}">
 
 <nav class="lang-switch" role="navigation" aria-label="Language">
     <button id="lang-en" onclick="switchLang('en')">EN</button>
@@ -89,8 +118,9 @@
     document.addEventListener('DOMContentLoaded',()=>{
       document.getElementById('lang-'+CUR_LANG)?.classList.add('active');
       document.querySelectorAll('a[href^="/"],a[href^="./"],a[href^="../"]').forEach(a=>{
-        try{const u=new URL(a.href,location.origin);
-            if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}
+        try{
+          const u=new URL(a.href,location.origin);
+          if(!u.searchParams.get('lang')){u.searchParams.set('lang',CUR_LANG);a.href=u.pathname+u.search;}
         }catch{}
       });
     });
