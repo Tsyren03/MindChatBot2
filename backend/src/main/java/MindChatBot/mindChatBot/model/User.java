@@ -1,5 +1,6 @@
 package MindChatBot.mindChatBot.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -20,22 +21,23 @@ import java.util.stream.Collectors;
 @Builder
 @Setter
 @Getter
+@ToString
 public class User implements UserDetails {
 
     @Id
     @Builder.Default
     private String id = UUID.randomUUID().toString();
 
-    /** Human display name (NEW). */
     private String name;
 
-    /** Kept for backward compatibility with older documents that used "username" as name. */
     @Deprecated
     private String username;
 
     @Indexed(unique = true)
     private String email;
 
+    @JsonIgnore
+    @ToString.Exclude
     private String password;
 
     @Builder.Default
@@ -44,7 +46,24 @@ public class User implements UserDetails {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    /** Prefer the new "name" field; fall back to legacy "username" if present. */
+    // --- Email verification / 2FA registration state ---
+    @JsonIgnore
+    @ToString.Exclude
+    private String verificationCode;
+
+    private LocalDateTime verificationCodeExpiresAt;
+
+    private LocalDateTime lastVerificationCodeSentAt;
+
+    @Builder.Default
+    private int verificationAttemptCount = 0;
+
+    private LocalDateTime verificationLockedUntil;
+
+    @Builder.Default
+    private boolean isVerified = false;
+    // --- end verification state ---
+
     public String getNameSafe() {
         return (name != null && !name.isBlank())
                 ? name
@@ -55,7 +74,8 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream()
+        List<String> rs = (roles == null) ? List.of() : roles;
+        return rs.stream()
                 .map(r -> r == null ? "" : r.trim())
                 .filter(r -> !r.isEmpty())
                 .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
@@ -63,15 +83,31 @@ public class User implements UserDetails {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public String getPassword() { return password; }
+    @Override public String getPassword() { return password; }
 
-    /** Use email as the login username. */
-    @Override
-    public String getUsername() { return email; }
+    @Override public String getUsername() { return email; }
 
     @Override public boolean isAccountNonExpired()     { return true; }
     @Override public boolean isAccountNonLocked()      { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled()               { return true; }
+
+    @Override
+    public boolean isEnabled() {
+        return this.isVerified;
+    }
+
+    /* ---------- Helpers for verification lifecycle ---------- */
+
+    public void clearVerificationState() {
+        this.verificationCode = null;
+        this.verificationCodeExpiresAt = null;
+        this.lastVerificationCodeSentAt = null;
+        this.verificationAttemptCount = 0;
+        this.verificationLockedUntil = null;
+    }
+
+    public void markVerified() {
+        this.isVerified = true;
+        clearVerificationState();
+    }
 }

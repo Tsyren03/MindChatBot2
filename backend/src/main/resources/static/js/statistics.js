@@ -2,7 +2,7 @@
 (() => {
   // ---- auth helpers ----
   const token = () => localStorage.getItem("authToken") || null;
-  const auth  = () => (token() ? { Authorization: `Bearer ${token()}` } : {});
+  const auth  = () => (token() ? { Authorization: `Bearer ${token}` } : {});
 
   // ---- i18n helpers ----
   const t = (k, d) => (window.I18N && typeof I18N[k] === "string") ? I18N[k] : d;
@@ -12,28 +12,25 @@
   const css = (name, fallback) =>
     (getComputedStyle(document.documentElement).getPropertyValue(name) || "").trim() || fallback;
 
-  // ---- chart theme (reads from CSS variables when available) ----
+  // ---- chart theme ----
   const INK       = css("--ink", "#1A1A1A");
   const SUBTEXT   = css("--chart-axis", css("--ink-3", "#8A8A8A"));
   const GRID      = css("--chart-grid", css("--line-soft", "#E2E3E8"));
   const CARD_LINE = css("--line", "#9A9AA1");
-  const CARD_BG   = css("--card", "#FFFFFF"); // used for pie slice separators
+  const CARD_BG   = css("--card", "#FFFFFF");
 
   Chart.defaults.color       = INK;
   Chart.defaults.borderColor = CARD_LINE;
-
-  // Remove default arc borders globally; we'll add them explicitly where we want
   Chart.defaults.elements.arc = Chart.defaults.elements.arc || {};
   Chart.defaults.elements.arc.borderWidth = 0;
   Chart.defaults.elements.arc.borderColor = "transparent";
 
-  // App-like mood colors (match the main UI)
   const COLORS = {
-    bad:     css("--chart-bad",     "#FF3B30"), // vivid red
-    poor:    css("--chart-poor",    "#FF9F0A"), // vivid orange (app-style)
-    neutral: css("--chart-neutral", "#D1D5DB"), // light neutral like the app
-    good:    css("--chart-good",    "#34C759"), // iOS green
-    best:    css("--chart-best",    "#0A84FF"), // iOS blue
+    bad:     css("--chart-bad",     "#FF3B30"),
+    poor:    css("--chart-poor",    "#FF9F0A"),
+    neutral: css("--chart-neutral", "#D1D5DB"),
+    good:    css("--chart-good",    "#34C759"),
+    best:    css("--chart-best",    "#0A84FF"),
   };
 
   const SUBCOLORS = {
@@ -68,7 +65,6 @@
   const nextBtn      = document.getElementById("nextMonth");
   const thisBtn      = document.getElementById("thisMonth");
 
-  // keep a stable height for the line chart no matter the month
   const LINE_H = 320;
   if (canvas) {
     canvas.style.height = `${LINE_H}px`;
@@ -86,13 +82,24 @@
   })
   .then(r => r.json())
   .then(data => {
-    // Main distribution pie — bigger, with separating borders, app colors
-    if (data?.mainMoodStats && pieEl) {
+    // Prefer counts if backend provides them; otherwise fall back to existing percentages (sum≈100)
+    const mainCounts = data?.mainMoodCounts || {};
+    const mainStats  = data?.mainMoodStats  || {}; // percentages (old)
+    const subCounts  = data?.subMoodCounts  || {};
+    const subStats   = data?.subMoodStats   || {}; // percentages (old)
+
+    // Main distribution pie — show counts
+    if (pieEl) {
       try { pieEl.width = 360; pieEl.height = 360; } catch {}
 
-      const s = data.mainMoodStats;
-      const counts = [s.bad, s.poor, s.neutral, s.good, s.best].map(n => Math.round(Number(n) || 0));
-      const total  = counts.reduce((a,b)=>a+b,0) || 1;
+      const counts = [
+        Number(mainCounts.bad     ?? 0) || Math.round(Number(mainStats.bad)     || 0),
+        Number(mainCounts.poor    ?? 0) || Math.round(Number(mainStats.poor)    || 0),
+        Number(mainCounts.neutral ?? 0) || Math.round(Number(mainStats.neutral) || 0),
+        Number(mainCounts.good    ?? 0) || Math.round(Number(mainStats.good)    || 0),
+        Number(mainCounts.best    ?? 0) || Math.round(Number(mainStats.best)    || 0),
+      ];
+      const total = counts.reduce((a,b)=>a+b,0) || 1;
 
       new Chart(pieEl.getContext("2d"), {
         type: "pie",
@@ -101,7 +108,6 @@
           datasets: [{
             data: counts,
             backgroundColor: [COLORS.bad, COLORS.poor, COLORS.neutral, COLORS.good, COLORS.best],
-            // 👇 thin separators between slices, matching the card background
             borderColor: CARD_BG,
             borderWidth: 2,
             hoverBorderColor: CARD_BG,
@@ -130,8 +136,8 @@
       });
     }
 
-    // Submood pies (localized legends, label: count (pct))
-    if (data?.subMoodStats && subWrap) {
+    // Submood pies — **percent is relative to that main mood total**
+    if (subWrap) {
       const groups = {
         best:["proud","grateful","energetic","excited","fulfilled"],
         good:["calm","productive","hopeful","motivated","friendly"],
@@ -143,10 +149,21 @@
       subWrap.innerHTML = "";
 
       Object.keys(groups).forEach(main => {
-        const subs  = groups[main];
-        const vals  = subs.map(s => Math.round(Number(data.subMoodStats[`${main}:${s}`] || 0)));
-        const total = vals.reduce((a,b)=>a+b,0);
-        if (!total) return;
+        const subs = groups[main];
+
+        // raw counts per sub (fallback to old global pct if needed)
+        const vals = subs.map(s => {
+          const key = `${main}:${s}`;
+          if (key in subCounts) return Number(subCounts[key]) || 0;
+          // fallback: estimate a "count-like" number from global pct (not exact),
+          // scaled by main total if available, else by sum of its own subs
+          const mainTotal = Number(mainCounts[main]) || 0;
+          const pctGlobal = Number(subStats[key]) || 0;
+          return mainTotal ? Math.round((pctGlobal / 100) * mainTotal) : Math.round(pctGlobal);
+        });
+
+        const totalMain = Number(mainCounts[main]) || vals.reduce((a,b)=>a+b,0);
+        if (!totalMain) return; // skip empty pies
 
         const card = document.createElement("div");
         card.className = "mini";
@@ -180,7 +197,7 @@
                   label: (ctx) => {
                     const label = ctx.label || "";
                     const v = Math.round(Number(ctx.parsed) || 0);
-                    const pct = Math.round((v / total) * 100);
+                    const pct = totalMain ? Math.round((v / totalMain) * 100) : 0;
                     return ` ${label}: ${v} (${pct}%)`;
                   }
                 }
@@ -228,21 +245,19 @@
   async function renderMonth(monthStart) {
     if (!canvas) return;
 
-    // re-pin height before (re)creating the chart
     canvas.style.height = `${LINE_H}px`;
     canvas.height = LINE_H;
 
     const ctx = canvas.getContext("2d");
     const monthEnd = endOfMonth(monthStart);
 
-    // every calendar day in the month
     const days = [];
     for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
       days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
     }
 
     const map    = await fetchMonthMap(monthStart);
-    const values = days.map(d => map.get(ymd(d)) ?? null); // null = no record
+    const values = days.map(d => map.get(ymd(d)) ?? null);
     const any    = values.some(v => v != null);
 
     if (lineChart) lineChart.destroy();
@@ -262,7 +277,7 @@
           borderWidth: 3,
           borderJoinStyle: "round",
           borderCapStyle: "round",
-          borderColor: "#9aa3ae", // fallback; segments are colored below
+          borderColor: "#9aa3ae",
           pointRadius: (c) => (c.raw != null ? 5 : 0),
           pointHoverRadius: (c) => (c.raw != null ? 7 : 0),
           hitRadius: 10,
@@ -276,7 +291,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,   // respect fixed height
+        maintainAspectRatio: false,
         layout: { padding: { left: 6, right: 6, top: 6, bottom: 6} },
         interaction: { mode: "nearest", intersect: true },
         plugins: {
@@ -323,7 +338,6 @@
     nextBtn?.addEventListener("click", () => { selectedMonth = addMonths(selectedMonth,  1); renderMonth(selectedMonth); });
     thisBtn?.addEventListener("click", () => { selectedMonth = new Date(THIS_MONTH);    renderMonth(selectedMonth); });
 
-    // keyboard: ← → and Home jump
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft")  { e.preventDefault(); selectedMonth = addMonths(selectedMonth, -1); renderMonth(selectedMonth); }
       if (e.key === "ArrowRight") { e.preventDefault(); selectedMonth = addMonths(selectedMonth,  1); renderMonth(selectedMonth); }
@@ -333,7 +347,6 @@
     updateNav();
   }
 
-  // Never disable Next (you can browse future months too)
   function updateNav() {
     if (!prevBtn || !nextBtn || !thisBtn) return;
     prevBtn.disabled = false;

@@ -1,4 +1,3 @@
-// File: src/main/java/MindChatBot/mindChatBot/controller/MoodController.java
 package MindChatBot.mindChatBot.controller;
 
 import MindChatBot.mindChatBot.model.Mood;
@@ -20,18 +19,14 @@ public class MoodController {
     private final MoodService moodService;
 
     @Autowired
-    public MoodController(MoodService moodService) {
-        this.moodService = moodService;
-    }
+    public MoodController(MoodService moodService) { this.moodService = moodService; }
 
-    // GET: used by your calendar fetch (?year=&month=)
     @GetMapping("/fetch")
     public List<Mood> getMoodsByQuery(@RequestParam int year, @RequestParam int month) {
         String userId = getCurrentUserId();
         return moodService.getMoodsByMonth(userId, year, month);
     }
 
-    // POST: optional (keep only if you also call it from somewhere)
     @PostMapping("/fetch")
     public List<Mood> getMoodsByJson(@RequestBody Map<String, Integer> request) {
         String userId = getCurrentUserId();
@@ -41,18 +36,14 @@ public class MoodController {
         return moodService.getMoodsByMonth(userId, year, month);
     }
 
-    // SAVE mood and return a single localized bot reply
     @PostMapping("/save")
     public Mono<Map<String, Object>> saveMood(
             @RequestBody Mood mood,
-            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage
-    ) {
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage) {
+
         String userId = getCurrentUserId();
-
-        String bodyLang = (mood.getLang() == null ? null : mood.getLang()); // if you added "lang" to Mood; ok if null
+        String bodyLang = (mood.getLang() == null ? null : mood.getLang());
         String lang = normalizeLang(bodyLang, acceptLanguage, LocaleContextHolder.getLocale());
-
-        // NOTE: add a lang parameter to your service method.
         return moodService.saveMoodWithReply(userId, mood, lang);
     }
 
@@ -67,8 +58,6 @@ public class MoodController {
         String userId = getCurrentUserId();
         return moodService.getAllMoodsForUser(userId);
     }
-
-    /* ---------- helpers ---------- */
 
     private static String normalizeLang(String bodyLang, String headerLang, java.util.Locale reqLocale) {
         String l = (StringUtils.hasText(bodyLang) ? bodyLang

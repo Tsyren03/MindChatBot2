@@ -116,41 +116,62 @@ public class MoodService {
     }
 
     /** Aggregate stats */
+    /** Aggregate stats — return BOTH percentages and raw counts */
     public Map<String, Object> getMoodStatistics(String userId) {
         List<Mood> moods = moodRepository.findByUserId(userId);
 
-        Map<String, Integer> moodCounts = new HashMap<>();
-        for (String mood : MOOD_MAP.keySet()) {
-            moodCounts.put(mood, (int) moods.stream().filter(m -> mood.equals(m.getEmoji())).count());
-        }
-        int totalMoods = moodCounts.values().stream().mapToInt(Integer::intValue).sum();
-        Map<String, Double> moodPercentages = new HashMap<>();
-        for (Map.Entry<String, Integer> e : moodCounts.entrySet()) {
-            double pct = totalMoods == 0 ? 0.0 : (e.getValue() * 100.0) / totalMoods;
-            moodPercentages.put(e.getKey(), pct);
-        }
-
-        Map<String, Integer> subMoodCounts = new HashMap<>();
-        for (String mood : MOOD_MAP.keySet()) {
-            for (String sub : MOOD_MAP.get(mood)) {
-                String key = mood + ":" + sub;
-                subMoodCounts.put(key, (int) moods.stream()
-                        .filter(m -> mood.equals(m.getEmoji()) && sub.equals(m.getSubMood()))
-                        .count());
+        // ---- counts by main ----
+        Map<String, Integer> mainCounts = new HashMap<>();
+        for (String k : MOOD_MAP.keySet()) mainCounts.put(k, 0);
+        for (Mood m : moods) {
+            String main = m.getEmoji();
+            if (mainCounts.containsKey(main)) {
+                mainCounts.put(main, mainCounts.get(main) + 1);
             }
         }
-        int totalSub = subMoodCounts.values().stream().mapToInt(Integer::intValue).sum();
-        Map<String, Double> subMoodPercentages = new HashMap<>();
-        for (Map.Entry<String, Integer> e : subMoodCounts.entrySet()) {
+        int totalMoods = mainCounts.values().stream().mapToInt(Integer::intValue).sum();
+
+        // ---- percentages by main (kept for backward-compat) ----
+        Map<String, Double> mainPct = new HashMap<>();
+        for (Map.Entry<String, Integer> e : mainCounts.entrySet()) {
+            double pct = totalMoods == 0 ? 0.0 : (e.getValue() * 100.0) / totalMoods;
+            mainPct.put(e.getKey(), pct);
+        }
+
+        // ---- counts by sub (key "main:sub") ----
+        Map<String, Integer> subCounts = new HashMap<>();
+        for (String main : MOOD_MAP.keySet()) {
+            for (String sub : MOOD_MAP.get(main)) {
+                subCounts.put(main + ":" + sub, 0);
+            }
+        }
+        for (Mood m : moods) {
+            String main = m.getEmoji();
+            String sub  = m.getSubMood();
+            if (MOOD_MAP.containsKey(main) && MOOD_MAP.get(main).contains(sub)) {
+                String key = main + ":" + sub;
+                subCounts.put(key, subCounts.getOrDefault(key, 0) + 1);
+            }
+        }
+
+        // ---- global percentages by sub (kept for backward-compat) ----
+        int totalSub = totalMoods;
+        Map<String, Double> subPct = new HashMap<>();
+        for (Map.Entry<String, Integer> e : subCounts.entrySet()) {
             double pct = totalSub == 0 ? 0.0 : (e.getValue() * 100.0) / totalSub;
-            subMoodPercentages.put(e.getKey(), pct);
+            subPct.put(e.getKey(), pct);
         }
 
         Map<String, Object> result = new HashMap<>();
-        result.put("mainMoodStats", moodPercentages);
-        result.put("subMoodStats", subMoodPercentages);
+        // existing keys (what old UI consumed)
+        result.put("mainMoodStats", mainPct);
+        result.put("subMoodStats",  subPct);
+        // NEW: raw counts so UI can show N and compute % per main
+        result.put("mainMoodCounts", mainCounts);
+        result.put("subMoodCounts",  subCounts);
         return result;
     }
+
 
     public List<Mood> getAllMoodsForUser(String userId) {
         return moodRepository.findByUserId(userId);

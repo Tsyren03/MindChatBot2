@@ -66,7 +66,10 @@ const MOOD_MAP = {
 /* expose to HTML helpers */
 window.MOOD_COLOR_MAP = MOOD_COLOR_MAP;
 window.CATEGORY_BASE = CATEGORY_BASE;
-
+function getCsrfToken() {
+  const m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null; // CookieCsrfTokenRepository sets this cookie
+}
 /* ===== i18n ===== */
 function t(key, fallback){
   return (window.I18N && typeof window.I18N[key] === 'string') ? window.I18N[key] : fallback;

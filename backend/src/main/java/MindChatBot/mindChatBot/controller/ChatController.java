@@ -1,4 +1,3 @@
-// File: src/main/java/MindChatBot/mindChatBot/controller/ChatController.java
 package MindChatBot.mindChatBot.controller;
 
 import MindChatBot.mindChatBot.model.ChatLog;
@@ -21,15 +20,13 @@ public class ChatController {
     private final OpenAiService openAiService;
 
     @Autowired
-    public ChatController(OpenAiService openAiService) {
-        this.openAiService = openAiService;
-    }
+    public ChatController(OpenAiService openAiService) { this.openAiService = openAiService; }
 
     @PostMapping
     public Mono<ResponseEntity<Map<String, String>>> chatWithBot(
             @RequestBody Map<String, Object> body,
-            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage
-    ) {
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage) {
+
         String userId = resolveUserId(body);
         String message = Objects.toString(body.getOrDefault("message", ""), "").trim();
 
@@ -48,13 +45,10 @@ public class ChatController {
                 .flatMap(historyList -> {
                     int from = Math.max(0, historyList.size() - 5);
                     List<ChatLog> recentHistory = historyList.subList(from, historyList.size());
-
-                    // NOTE: add a lang parameter to your service method.
                     return openAiService.sendMessageToOpenAI(recentHistory, message, userId, lang)
                             .flatMap(response ->
                                     openAiService.saveChatLog(userId, message, response)
-                                            .thenReturn(ResponseEntity.ok(Map.of("response", response)))
-                            );
+                                            .thenReturn(ResponseEntity.ok(Map.of("response", response))));
                 })
                 .onErrorResume(err ->
                         Mono.just(ResponseEntity.status(500)
@@ -68,8 +62,6 @@ public class ChatController {
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().build()));
     }
-
-    /* ---------- helpers ---------- */
 
     private static String asStringOrNull(Object o) {
         return (o instanceof String s && StringUtils.hasText(s)) ? s : null;

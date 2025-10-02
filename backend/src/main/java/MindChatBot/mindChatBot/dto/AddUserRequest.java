@@ -1,20 +1,27 @@
 package MindChatBot.mindChatBot.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AddUserRequest {
-    private String email;
-    private String password;
+
+    @NotBlank
+    @Size(max = 120)
     private String name;
 
-    public String getName() {
-        return name;
-    }
+    @NotBlank
+    @Email
+    @Size(max = 190)
+    private String email;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    @NotBlank
+    @Size(min = 8, max = 200)
+    private String password;
 }

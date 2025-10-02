@@ -15,17 +15,25 @@ spring:
     cache: false
   data:
     mongodb:
-      # Use EITHER this single URI (recommended)...
-      uri: mongodb://localhost:27017/mindChatBotDB
-      # ...OR the individual host/port/credentials keys below (NOT BOTH).
-
+      uri: "mongodb://localhost:27017/mindChatBotDB"
+  mail:
+    host: "smtp.gmail.com"
+    port: 587
+    username: mindchatbotst@gmail.com
+    password: jfsauoccofnsufrh
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   web:
     resources:
-      static-locations: classpath:/static/
+      static-locations: "classpath:/static/"
 
 openai:
   api:
-  model: gpt-4o-mini           # use whatever your service expects
+  model: "gpt-4o-mini"
   system:
     prompt: |
       You are a kind, emotionally smart mental health assistant.
@@ -34,3 +42,8 @@ openai:
       Encourage sharing, but don’t push.
 
 jwt:
+
+logging:
+  level:
+    org.springframework.security: INFO
+    MindChatBot.mindChatBot: INFO

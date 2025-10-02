@@ -1,10 +1,10 @@
-// File: src/main/java/MindChatBot/mindChatBot/service/OpenAiService.java
 package MindChatBot.mindChatBot.service;
 
 import MindChatBot.mindChatBot.model.ChatLog;
 import MindChatBot.mindChatBot.repository.ChatLogRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.*;
 
+@Slf4j
 @Service
 public class OpenAiService {
 
@@ -71,8 +72,15 @@ public class OpenAiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .flatMap(OpenAiService::extractMessage)
-                .switchIfEmpty(Mono.just("(empty response)"));
+                .flatMap(this::extractMessage)
+                .switchIfEmpty(Mono.fromCallable(() -> {
+                    log.warn("OpenAI returned empty body/choices for user={}", userName);
+                    return "(empty response)";
+                }))
+                .onErrorResume(e -> {
+                    log.error("OpenAI call failed: {}", e.getMessage(), e);
+                    return Mono.just("(Chat service is temporarily unavailable.)");
+                });
     }
 
     /** Old signature kept for compatibility (defaults to English) */
@@ -107,15 +115,17 @@ public class OpenAiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .flatMap(map -> extractMessage(map).flatMap(content -> {
+                .flatMap(res -> extractMessage(res).flatMap(content -> {
                     try {
-                        content = content.trim();
-                        if (content.startsWith("{")) {
+                        String c = (content == null) ? "" : content.trim();
+                        if (c.startsWith("{")) {
                             return Mono.just(new ObjectMapper()
-                                    .readValue(content, new TypeReference<Map<String, String>>() {}));
+                                    .readValue(c, new TypeReference<Map<String, String>>() {}));
                         }
+                        log.warn("Classifier returned non-JSON content: {}", c);
                         return Mono.error(new IllegalStateException("Classifier returned non-JSON content"));
                     } catch (Exception e) {
+                        log.error("Error parsing mood JSON: {}", e.getMessage(), e);
                         return Mono.error(new RuntimeException("Error parsing mood JSON", e));
                     }
                 }));
@@ -144,16 +154,25 @@ public class OpenAiService {
         return userId;
     }
 
-    private static Mono<String> extractMessage(Map<?, ?> response) {
+    private Mono<String> extractMessage(Map<?, ?> response) {
         try {
             List<?> choices = (List<?>) response.get("choices");
-            if (choices != null && !choices.isEmpty()) {
-                Map<?, ?> choice = (Map<?, ?>) choices.get(0);
-                Map<?, ?> message = (Map<?, ?>) choice.get("message");
-                return Mono.justOrEmpty((String) message.get("content"));
+            if (choices == null || choices.isEmpty()) {
+                log.warn("OpenAI: no choices found in response: {}", response);
+                return Mono.empty();
             }
-        } catch (Exception ignored) {}
-        return Mono.empty();
+            Map<?, ?> choice = (Map<?, ?>) choices.get(0);
+            Map<?, ?> message = (Map<?, ?>) choice.get("message");
+            String content = (message == null) ? null : (String) message.get("content");
+            if (content == null || content.isBlank()) {
+                log.warn("OpenAI: empty content in first choice: {}", choice);
+                return Mono.empty();
+            }
+            return Mono.just(content);
+        } catch (Exception ex) {
+            log.error("OpenAI: failed to parse response: {}", ex.getMessage(), ex);
+            return Mono.empty();
+        }
     }
 
     private static String normalizedLang(String lang) {
@@ -165,7 +184,6 @@ public class OpenAiService {
     }
 
     private String systemPromptFor(String lang) {
-        // If you set openai.system.prompt in application.yml, it's used for English.
         String defaultEn = (systemPrompt != null && !systemPrompt.isBlank())
                 ? systemPrompt
                 : "You are a supportive mental-health companion. "

@@ -1,48 +1,24 @@
-// ViewController.java
 package MindChatBot.mindChatBot.controller;
 
-import lombok.RequiredArgsConstructor;
-import MindChatBot.mindChatBot.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
-@RequiredArgsConstructor
 @Controller
 public class ViewController {
-    private final UserService userService;
 
-    // Main
     @GetMapping({"/index", "/user", "/user/index"})
-    public String mainPage() {
-        return "index"; // templates/index.html
-    }
+    public String mainPage() { return "index"; }
 
-    // Back-compat for direct .html hits
-    @GetMapping("/index.html")
-    public String redirectIndexHtml() { return "redirect:/index"; }
+    @GetMapping("/index.html")  public String redirectIndexHtml()  { return "redirect:/index"; }
+    @GetMapping("/login.html")  public String redirectLoginHtml()  { return "redirect:/login"; }
+    @GetMapping("/signup.html") public String redirectSignupHtml() { return "redirect:/signup"; }
 
-    // Auth pages
-    @GetMapping("/login")
-    public String login() { return "login"; }     // templates/login.html
+    @GetMapping("/login")  public String login()  { return "login"; }
+    @GetMapping("/signup") public String signup() { return "signup"; }
 
-    @GetMapping("/signup")
-    public String signup() { return "signup"; }   // templates/signup.html
+    @GetMapping({"/notes", "/notes.html"})             public String notes()       { return "notes"; }
+    @GetMapping({"/statistics", "/statistics.html"})   public String statistics()  { return "statistics"; }
+    @GetMapping({"/home", "/home.html"})               public String home()        { return "home"; }
 
-    // App pages (add these!)
-    @GetMapping({"/notes", "/notes.html"})
-    public String notes() { return "notes"; }     // templates/notes.html
-
-    @GetMapping({"/statistics", "/statistics.html"})
-    public String statistics() { return "statistics"; } // templates/statistics.html
-
-    @GetMapping({"/home", "/home.html"})
-    public String home() { return "home"; }       // templates/home.html
-
-    // Root
-    @GetMapping("/")
-    public String root() {
-        // pick one:
-        // return "redirect:/index";
-        return "redirect:/login";
-    }
+    @GetMapping("/") public String root() { return "redirect:/login"; }
 }

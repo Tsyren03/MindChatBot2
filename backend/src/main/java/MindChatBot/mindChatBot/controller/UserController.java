@@ -3,150 +3,173 @@ package MindChatBot.mindChatBot.controller;
 import MindChatBot.mindChatBot.dto.AddUserRequest;
 import MindChatBot.mindChatBot.model.User;
 import MindChatBot.mindChatBot.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.CacheControl;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import MindChatBot.mindChatBot.service.EmailService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @Controller
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
-
-    @GetMapping(value = "/user/profile", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> getProfile(@AuthenticationPrincipal UserDetails userDetails) {
-        // Never cache this response
-        CacheControl noStore = CacheControl.noStore();
-
-        if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .cacheControl(noStore)
-                    .header(HttpHeaders.PRAGMA, "no-cache")
-                    .header(HttpHeaders.EXPIRES, "0")
-                    .body(Map.of("error", "Not logged in"));
-        }
-
-        // In security, getUsername() returns the login identifier (email in our app)
-        User user = userRepository.findByEmail(userDetails.getUsername()).orElse(null);
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .cacheControl(noStore)
-                    .header(HttpHeaders.PRAGMA, "no-cache")
-                    .header(HttpHeaders.EXPIRES, "0")
-                    .body(Map.of("error", "User not found"));
-        }
-
-        String id = user.getId();
-
-        // Prefer the real name; if missing, fall back to the local-part of the email.
-        String email = user.getEmail();
-        String displayName = (user.getName() != null && !user.getName().isBlank())
-                ? user.getName().trim()
-                : (email != null ? email.replaceFirst("@.*$", "") : "");
-
-        String joined = "-";
-        if (user.getCreatedAt() != null) {
-            // ISO local date (yyyy-MM-dd)
-            joined = user.getCreatedAt().toString().substring(0, 10);
-        }
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("id", id);
-        body.put("email", email);
-        body.put("name", displayName);   // <-- frontend expects "name"
-        body.put("joined", joined);
-
-        return ResponseEntity.ok()
-                .cacheControl(noStore)
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.EXPIRES, "0")
-                .body(body);
+    private String generateCode() {
+        return String.format("%06d", ThreadLocalRandom.current().nextInt(100000, 1000000));
     }
 
-    @PostMapping("/user/register")
-    public String register(@ModelAttribute AddUserRequest request) {
-        // Normalize & validate
-        String rawEmail = request.getEmail() == null ? "" : request.getEmail().trim();
-        String email = rawEmail.toLowerCase();
-        String name = request.getName() == null ? "" : request.getName().trim();
-        String password = request.getPassword() == null ? "" : request.getPassword();
+    /* ---------- STEP 1: JSON (AJAX) ---------- */
+    @PostMapping(value = "/signup", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> initiateSignupJson(@RequestBody AddUserRequest request) {
+        final String email = request.getEmail().toLowerCase().trim();
+        log.info("AJAX signup attempt for {}", email);
 
-        if (email.isBlank() || password.isBlank() || name.isBlank()) {
-            return "redirect:/signup?error=invalid";
+        Optional<User> existing = userRepository.findByEmail(email);
+        if (existing.isPresent() && existing.get().isVerified()) {
+            // Return a friendly string (frontend shows this directly).
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "An account with this email already exists."));
         }
 
-        if (userRepository.findByEmail(email).isPresent()) {
+        String code = generateCode();
+
+        User user = existing.orElseGet(User::new);
+        user.setEmail(email);
+        user.setName(Optional.ofNullable(request.getName()).orElse("").trim());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setVerificationCode(code);
+        user.setVerified(false);
+        if (user.getCreatedAt() == null) user.setCreatedAt(LocalDateTime.now());
+
+        userRepository.save(user);
+        emailService.sendVerificationCode(email, code);
+
+        return ResponseEntity.ok(Map.of("confirmationId", email));
+    }
+
+    /* ---------- STEP 1: HTML form fallback ---------- */
+    @PostMapping(value = "/signup", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String initiateSignupForm(AddUserRequest request) {
+        final String email = request.getEmail().toLowerCase().trim();
+        log.info("FORM signup attempt for {}", email);
+
+        Optional<User> existing = userRepository.findByEmail(email);
+        if (existing.isPresent() && existing.get().isVerified()) {
             return "redirect:/signup?error=exists";
         }
 
-        User user = User.builder()
-                .email(email)
-                .name(name) // <-- store real display name
-                // If you kept a legacy "username" field for backward-compat,
-                // you can also set it here by uncommenting the next line:
-                // .username(name)
-                .password(passwordEncoder.encode(password))
-                .createdAt(LocalDateTime.now())
-                .build();
+        String code = generateCode();
+
+        User user = existing.orElseGet(User::new);
+        user.setEmail(email);
+        user.setName(Optional.ofNullable(request.getName()).orElse("").trim());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setVerificationCode(code);
+        user.setVerified(false);
+        if (user.getCreatedAt() == null) user.setCreatedAt(LocalDateTime.now());
 
         userRepository.save(user);
-        return "redirect:/login";
+        emailService.sendVerificationCode(email, code);
+
+        return "redirect:/signup?email=" + UriUtils.encode(email, StandardCharsets.UTF_8);
+    }
+
+    /* ---------- STEP 2: verify code ---------- */
+    @PostMapping("/verify")
+    public String verifyRegistration(@RequestParam("email") String email,
+                                     @RequestParam("verificationCode") String code) {
+        Optional<User> opt = userRepository.findByEmail(email.toLowerCase().trim());
+        if (opt.isEmpty()) return "redirect:/signup?error=notFound";
+
+        User user = opt.get();
+        if (user.isVerified()) return "redirect:/login?verified=true";
+
+        if (Objects.equals(user.getVerificationCode(), code)) {
+            user.setVerified(true);
+            user.setVerificationCode(null);
+            userRepository.save(user);
+            return "redirect:/login?success=true";
+        }
+        return "redirect:/signup?error=invalidCode&email=" + UriUtils.encode(email, StandardCharsets.UTF_8);
+    }
+
+    /* ---------- Resend code (AJAX) ---------- */
+    @PostMapping(value = "/resend-code", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Void> resendCode(@RequestBody Map<String, String> payload) {
+        String email = Optional.ofNullable(payload.get("email")).orElse("").trim().toLowerCase();
+        Optional<User> opt = userRepository.findByEmail(email);
+        if (opt.isPresent() && !opt.get().isVerified()) {
+            String code = generateCode();
+            User u = opt.get();
+            u.setVerificationCode(code);
+            userRepository.save(u);
+            emailService.sendVerificationCode(email, code);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    }
+
+    /* ---------- Profile APIs ---------- */
+    @GetMapping(value = "/user/profile", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getProfile(@org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .cacheControl(CacheControl.noStore())
+                    .body(Map.of("error", "Not logged in"));
+        }
+        User user = userRepository.findByEmail(principal.getUsername()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .cacheControl(CacheControl.noStore())
+                    .body(Map.of("error", "User not found"));
+        }
+        String joined = user.getCreatedAt() != null ? user.getCreatedAt().toString().substring(0, 10) : "-";
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", user.getId());
+        body.put("email", user.getEmail());
+        body.put("name", user.getNameSafe());
+        body.put("joined", joined);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
     }
 
     @PostMapping("/user/profile/upload-image")
     @ResponseBody
     public Map<String, String> uploadProfileImage(@RequestParam("profilePic") MultipartFile file,
-                                                  @AuthenticationPrincipal UserDetails principal) throws IOException {
+                                                  @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails principal) throws IOException {
         Map<String, String> result = new HashMap<>();
-        if (principal == null) {
-            result.put("error", "Not logged in");
-            return result;
-        }
-        if (file == null || file.isEmpty()) {
-            result.put("error", "No file uploaded");
-            return result;
-        }
+        if (principal == null) { result.put("error", "Not logged in"); return result; }
+        if (file == null || file.isEmpty()) { result.put("error", "No file uploaded"); return result; }
 
-        // Use authenticated email as prefix
-        String userEmail = principal.getUsername(); // email
+        String userEmail = principal.getUsername();
         String uploadDir = "src/main/resources/static/uploads/profile-images/";
         File dir = new File(uploadDir);
         if (!dir.exists()) dir.mkdirs();
 
-        String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
+        String originalFilename = org.springframework.util.StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         String safePrefix = userEmail.replaceAll("[^a-zA-Z0-9._-]", "_");
         String filename = safePrefix + "_" + System.currentTimeMillis() + "_" + originalFilename;
 
         File dest = new File(dir, filename);
         file.transferTo(dest);
-
-        // Optional: persist profileImageUrl in User (add field in entity & repository update)
-        // user.setProfileImageUrl("/uploads/profile-images/" + filename);
-        // userRepository.save(user);
 
         result.put("imageUrl", "/uploads/profile-images/" + filename);
         return result;
