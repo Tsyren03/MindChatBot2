@@ -20,7 +20,7 @@ spring:
     host: "smtp.gmail.com"
     port: 587
     username: mindchatbotst@gmail.com
-    password: jfsauoccofnsufrh
+    password: 
     properties:
       mail:
         smtp:
