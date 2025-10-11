@@ -20,7 +20,7 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    /** Sends a plain-text email with the 6-digit verification code. */
+    /** Sends a plain-text email with the 6-digit verification code for signup. */
     public void sendVerificationCode(String toEmail, String code) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -38,6 +38,28 @@ public class EmailService {
             mailSender.send(message);
         } catch (Exception e) {
             log.error("Failed to send verification email to {}: {}", toEmail, e.getMessage(), e);
+        }
+    }
+
+    /** Sends a plain-text email with the 6-digit password reset code. */
+    public void sendPasswordResetCode(String toEmail, String code) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(from);
+            message.setTo(toEmail);
+            message.setSubject("Your MindChatBot Password Reset Code");
+            message.setText(("""
+                    Hello,
+
+                    We received a request to reset your password.
+                    Your 6-digit password reset code is: %s
+
+                    This code expires in 10 minutes.
+                    If you didn’t request this, you can safely ignore this email.
+                    """).formatted(code));
+            mailSender.send(message);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage(), e);
         }
     }
 }

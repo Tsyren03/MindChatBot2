@@ -2,8 +2,10 @@ package MindChatBot.mindChatBot.controller;
 
 import MindChatBot.mindChatBot.model.ChatLog;
 import MindChatBot.mindChatBot.service.OpenAiService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,6 +15,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
@@ -20,7 +23,9 @@ public class ChatController {
     private final OpenAiService openAiService;
 
     @Autowired
-    public ChatController(OpenAiService openAiService) { this.openAiService = openAiService; }
+    public ChatController(OpenAiService openAiService) {
+        this.openAiService = openAiService;
+    }
 
     @PostMapping
     public Mono<ResponseEntity<Map<String, String>>> chatWithBot(
@@ -34,25 +39,26 @@ public class ChatController {
             return Mono.just(ResponseEntity.badRequest().body(Map.of("error", "Message is empty.")));
         }
 
-        String lang = normalizeLang(
-                asStringOrNull(body.get("lang")),
-                acceptLanguage,
-                LocaleContextHolder.getLocale()
-        );
+        // --- ENFORCE THE DAILY LIMIT HERE ---
+        return openAiService.sendMessageToOpenAI(Collections.emptyList(), message, userId,
+                        normalizeLang(asStringOrNull(body.get("lang")), acceptLanguage, LocaleContextHolder.getLocale()))
+                .flatMap(response -> {
+                    // If the response is null or empty (user exceeded limit and warning already sent)
+                    if (response == null || response.isBlank()) {
+                        log.warn("User '{}' attempted to chat after daily limit. Returning empty response.", userId);
+                        return Mono.just(ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                                .body(Map.of("error", "Daily message limit reached. Please try again tomorrow.")));
+                    }
 
-        return openAiService.getChatHistory(userId)
-                .collectList()
-                .flatMap(historyList -> {
-                    int from = Math.max(0, historyList.size() - 5);
-                    List<ChatLog> recentHistory = historyList.subList(from, historyList.size());
-                    return openAiService.sendMessageToOpenAI(recentHistory, message, userId, lang)
-                            .flatMap(response ->
-                                    openAiService.saveChatLog(userId, message, response)
-                                            .thenReturn(ResponseEntity.ok(Map.of("response", response))));
+                    // Save chat and return response normally
+                    return openAiService.saveChatLog(userId, message, response)
+                            .thenReturn(ResponseEntity.ok(Map.of("response", response)));
                 })
-                .onErrorResume(err ->
-                        Mono.just(ResponseEntity.status(500)
-                                .body(Map.of("error", "An error occurred while communicating with OpenAI."))));
+                .onErrorResume(err -> {
+                    log.error("An unexpected error occurred in the chat flow for user '{}': {}", userId, err.getMessage());
+                    return Mono.just(ResponseEntity.status(500)
+                            .body(Map.of("error", "An error occurred while communicating with the chat service.")));
+                });
     }
 
     @GetMapping("/history/{userId}")
@@ -63,6 +69,7 @@ public class ChatController {
                 .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().build()));
     }
 
+    // --- Helper Methods ---
     private static String asStringOrNull(Object o) {
         return (o instanceof String s && StringUtils.hasText(s)) ? s : null;
     }
@@ -81,6 +88,7 @@ public class ChatController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             Object p = auth.getPrincipal();
+            // Assumes you have a custom User model, adjust if necessary
             if (p instanceof MindChatBot.mindChatBot.model.User u) return u.getId();
             if (p instanceof org.springframework.security.core.userdetails.User u) return u.getUsername();
             return String.valueOf(p);

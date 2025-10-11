@@ -67,7 +67,6 @@ public class WebSecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepo)
                         .csrfTokenRequestHandler(requestHandler)
-                        // ⬇️ Disable CSRF only for these app JSON endpoints
                         .ignoringRequestMatchers(
                                 new AntPathRequestMatcher("/user/moods/**"),
                                 new AntPathRequestMatcher("/user/notes/**")
@@ -76,7 +75,8 @@ public class WebSecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/signup", "/verify", "/resend-code", "/error", "/favicon.ico").permitAll()
+                        // --- UPDATE THIS LINE ---
+                        .requestMatchers("/login", "/signup", "/verify", "/resend-code", "/error", "/favicon.ico", "/forgot-password", "/reset-password").permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         .requestMatchers("/icons/**", "/uploads/**", "/site.webmanifest", "/manifest.webmanifest").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")

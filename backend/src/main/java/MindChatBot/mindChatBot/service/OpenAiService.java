@@ -11,7 +11,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -20,13 +24,18 @@ public class OpenAiService {
     private final WebClient webClient;
     private final ChatLogRepository chatLogRepository;
 
+    // The daily message limit per user
+    private static final int DAILY_MESSAGE_LIMIT = 10;
+
+    // Track users who have already received the daily limit warning
+    private final Set<String> warnedUsers = ConcurrentHashMap.newKeySet();
+
     @Value("${openai.api.key}")
     private String openaiApiKey;
 
     @Value("${openai.model:gpt-4.1-nano}")
     private String model;
 
-    /** Optional: English default from application.yml; used if present */
     @Value("${openai.system.prompt:}")
     private String systemPrompt;
 
@@ -35,51 +44,76 @@ public class OpenAiService {
         this.chatLogRepository = chatLogRepository;
     }
 
+    public Mono<Boolean> isLimitReached(String userId) {
+        return Mono.fromCallable(() -> {
+            LocalDateTime startOfDay = LocalDate.now(ZoneOffset.UTC).atStartOfDay();
+            long messagesToday = chatLogRepository.countByUserIdAndTimestampAfter(userId, startOfDay);
+            log.info("User {} has sent {} messages today.", userId, messagesToday);
+            return messagesToday >= DAILY_MESSAGE_LIMIT;
+        });
+    }
+
     /* ---------- Public API ---------- */
 
-    /** NEW: language-aware send */
+    /** NEW: language-aware send with daily limit warning once per user */
     public Mono<String> sendMessageToOpenAI(List<ChatLog> history, String message, String userId, String lang) {
-        String l = normalizedLang(lang);
-        List<Map<String, String>> messages = new ArrayList<>();
+        return isLimitReached(userId)
+                .flatMap(limitReached -> {
+                    if (limitReached) {
+                        // Only warn once
+                        if (!warnedUsers.contains(userId)) {
+                            warnedUsers.add(userId);
+                            log.info("User {} reached daily limit of {}", userId, DAILY_MESSAGE_LIMIT);
+                            return Mono.just("⚠️ You have reached the daily chat limit. Please try again tomorrow.");
+                        } else {
+                            // silently ignore further requests after first warning
+                            log.info("User {} attempted to chat after daily limit, ignored.", userId);
+                            return Mono.empty();
+                        }
+                    }
 
-        // System prompt (localized)
-        messages.add(Map.of("role", "system", "content", systemPromptFor(l)));
+                    // Remove warning if user hasn't hit limit
+                    warnedUsers.remove(userId);
 
-        // Use a stable OpenAI "user" field for abuse tracking
-        String userName = safeUserName(userId);
+                    // Proceed with OpenAI call
+                    String l = normalizedLang(lang);
+                    List<Map<String, String>> messages = new ArrayList<>();
+                    messages.add(Map.of("role", "system", "content", systemPromptFor(l)));
 
-        // recent history (trim & limit)
-        int maxHistory = 5;
-        int startIdx = Math.max(0, history.size() - maxHistory);
-        for (int i = startIdx; i < history.size(); i++) {
-            ChatLog chat = history.get(i);
-            String userMsg = trim200(chat.getMessage());
-            String botResp = trim200(chat.getResponse());
-            if (userMsg != null) messages.add(Map.of("role", "user", "content", userMsg));
-            if (botResp != null) messages.add(Map.of("role", "assistant", "content", botResp));
-        }
+                    String userName = safeUserName(userId);
 
-        messages.add(Map.of("role", "user", "content", trim200(message)));
+                    int maxHistory = 5;
+                    int startIdx = Math.max(0, history.size() - maxHistory);
+                    for (int i = startIdx; i < history.size(); i++) {
+                        ChatLog chat = history.get(i);
+                        String userMsg = trim200(chat.getMessage());
+                        String botResp = trim200(chat.getResponse());
+                        if (userMsg != null) messages.add(Map.of("role", "user", "content", userMsg));
+                        if (botResp != null) messages.add(Map.of("role", "assistant", "content", botResp));
+                    }
 
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
-        requestBody.put("messages", messages);
-        if (userName != null) requestBody.put("user", userName);
+                    messages.add(Map.of("role", "user", "content", trim200(message)));
 
-        return webClient.post()
-                .uri("/chat/completions")
-                .header("Authorization", "Bearer " + openaiApiKey)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .flatMap(this::extractMessage)
-                .switchIfEmpty(Mono.fromCallable(() -> {
-                    log.warn("OpenAI returned empty body/choices for user={}", userName);
-                    return "(empty response)";
-                }))
-                .onErrorResume(e -> {
-                    log.error("OpenAI call failed: {}", e.getMessage(), e);
-                    return Mono.just("(Chat service is temporarily unavailable.)");
+                    Map<String, Object> requestBody = new HashMap<>();
+                    requestBody.put("model", model);
+                    requestBody.put("messages", messages);
+                    if (userName != null) requestBody.put("user", userName);
+
+                    return webClient.post()
+                            .uri("/chat/completions")
+                            .header("Authorization", "Bearer " + openaiApiKey)
+                            .bodyValue(requestBody)
+                            .retrieve()
+                            .bodyToMono(Map.class)
+                            .flatMap(this::extractMessage)
+                            .switchIfEmpty(Mono.fromCallable(() -> {
+                                log.warn("OpenAI returned empty body/choices for user={}", userName);
+                                return "(empty response)";
+                            }))
+                            .onErrorResume(e -> {
+                                log.error("OpenAI call failed: {}", e.getMessage(), e);
+                                return Mono.just("(Chat service is temporarily unavailable.)");
+                            });
                 });
     }
 
@@ -133,7 +167,8 @@ public class OpenAiService {
 
     public Flux<ChatLog> getChatHistory(String userId) {
         List<ChatLog> logs = chatLogRepository.findByUserIdOrderByTimestampAsc(userId);
-        return Flux.fromIterable(logs);
+        // Return only current user's logs to avoid showing other users
+        return Flux.fromIterable(logs).filter(log -> userId.equals(log.getUserId()));
     }
 
     public Mono<Void> saveChatLog(String userId, String message, String response) {

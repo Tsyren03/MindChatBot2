@@ -20,7 +20,7 @@ spring:
     host: "smtp.gmail.com"
     port: 587
     username: mindchatbotst@gmail.com
-    password: 
+    password:
     properties:
       mail:
         smtp:
@@ -42,7 +42,6 @@ openai:
       Encourage sharing, but don’t push.
 
 jwt:
-
 logging:
   level:
     org.springframework.security: INFO
