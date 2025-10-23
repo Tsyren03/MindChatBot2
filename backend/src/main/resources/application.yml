@@ -15,12 +15,16 @@ spring:
     cache: false
   data:
     mongodb:
-      uri: "mongodb://localhost:27017/mindChatBotDB"
+      # 🚨 FIXED: Removed the local fallback. 
+      # The app will now crash if MONGO_URI is not set in the environment,
+      # ensuring it always uses the Atlas URI in the cloud.
+      uri: ${MONGO_URI}
   mail:
     host: "smtp.gmail.com"
     port: 587
     username: mindchatbotst@gmail.com
-    password:
+    # Keep using the environment variable for security
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -33,6 +37,8 @@ spring:
 
 openai:
   api:
+    # Keep using the environment variable
+    key: ${OPENAI_API_KEY}
   model: "gpt-4o-mini"
   system:
     prompt: |
@@ -42,6 +48,8 @@ openai:
       Encourage sharing, but don’t push.
 
 jwt:
+  # Keep using the environment variable
+  secret: ${JWT_SECRET_KEY}
 logging:
   level:
     org.springframework.security: INFO

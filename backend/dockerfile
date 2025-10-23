@@ -1,0 +1,31 @@
+# --- Stage 1: Build the application with Gradle ---
+FROM eclipse-temurin:17-jdk-jammy AS build
+WORKDIR /workspace/app
+
+# Copy the Gradle wrapper files to leverage Docker cache
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+
+# Copy the application source code
+COPY src src
+
+# Make the gradlew script executable
+RUN chmod +x ./gradlew
+
+# Build the project and create the executable JAR
+# The '-x test' flag skips running tests to speed up the build
+RUN ./gradlew build -x test
+
+# --- Stage 2: Create the final, lightweight runtime image ---
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+
+# Copy only the built JAR file from the 'build' stage
+# Gradle places the output in build/libs
+COPY --from=build /workspace/app/build/libs/*.jar app.jar
+
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
