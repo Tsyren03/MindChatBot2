@@ -1,113 +1,127 @@
-# MindChatBot2
+🧠 MindChatBot: AI-Powered Mental Wellness Assistant
+MindChatBot is a secure, full-stack web application designed to be an AI-powered companion for mental wellness. It provides users with a private and supportive space to chat, log their daily journals, and track their moods, all enhanced with intelligent, empathetic responses from an AI.
 
-# MindChatBot2
+The backend is built with Spring Boot 3 and Spring Security, using JWT for stateless authentication and MongoDB for data persistence.
 
-A simple, modular chatbot project with a Java backend (Gradle or Maven) and optional web frontend.
+✨ Features
+🤖 AI Conversational Agent: A core chat feature allowing users to talk with an AI, powered by the OpenAI API.
 
-> **License:** MIT
+🔒 Secure Authentication: A robust security system using Spring Security 6, handling user registration, login, and password reset.
 
----
+🔐 JSON Web Token (JWT): Stateless, secure API authentication for both web and potential mobile clients.
 
-## Quickstart
+📓 Daily Journaling: A dedicated feature for users to write journal entries. The application provides an AI-generated supportive reply for each entry.
 
-### Prerequisites
+😊 Daily Mood Tracking: Users can log their daily mood (e.g., emoji, sub-mood) and receive an encouraging AI-powered response.
 
-* Java 21+ (Temurin recommended)
-* Node.js 20+ (only if you add/use a frontend)
-* Docker (optional)
+📈 Mood Statistics: An API endpoint to provide statistics and insights based on the user's logged mood history.
 
-### Clone
+🌐 Internationalization (i18n): The application is configured to support multiple languages (EN, KO, RU), detecting language from headers or URL parameters.
 
-```bash
+🛡️ CSRF Protection: Hybrid security setup with CSRF protection for web-based, stateful form logins and disabled CSRF for stateless API routes.
+
+🗂️ Full-Stack Project: A complete project with a Java backend and a (JavaScript/HTML/CSS) frontend.
+
+🛠️ Tech Stack
+Backend
+Java 21
+
+Spring Boot 3
+
+Spring Security 6: For authentication and authorization.
+
+Spring Web / WebFlux: Using Mono for non-blocking calls to the OpenAI API.
+
+Spring Data MongoDB: For database interactions.
+
+jjwt (Java JWT): For creating and validating JSON Web Tokens.
+
+Spring Boot Mail: For sending verification and password reset emails.
+
+Frontend
+HTML5
+
+CSS3
+
+JavaScript (for API calls)
+
+Database
+MongoDB: A NoSQL database used to store users, chat logs, journal entries, and moods.
+
+External APIs
+OpenAI API: Used to generate all intelligent and empathetic responses.
+
+🚀 Getting Started
+Prerequisites
+Java 21+ (e.g., Amazon Corretto or Temurin)
+
+MongoDB: A running instance (e.g., MongoDB Atlas or a local server).
+
+OpenAI API Key: A valid API key from OpenAI.
+
+1. Configuration
+Before running the application, you must configure your environment variables. You can do this by creating an application.properties or application.yml file in src/main/resources.
+
+Key Properties:
+
+Properties
+
+# MongoDB Connection String (e.g., from Atlas)
+spring.data.mongodb.uri=mongodb+srv://<username>:<password>@<cluster-url>/mindChatBotDB?retryWrites=true&w=majority
+
+# JWT Secret Key (must be a long, random string, 32+ bytes)
+jwt.secret=your-super-strong-base64-encoded-secret-key
+
+# OpenAI API Key
+openai.api.key=sk-YourOpenAIApiKeyGoesHere
+
+# Email Configuration (example for Gmail)
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your-email@gmail.com
+spring.mail.password=your-gmail-app-password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+2. Building and Running
+Clone the repository:
+
+Bash
+
 git clone https://github.com/Tsyren03/MindChatBot2.git
 cd MindChatBot2
-```
+Build and run using Gradle (recommended):
 
-### Backend
+Bash
 
-Choose the command that matches your build tool.
+# On Windows
+./gradlew.bat bootRun
 
-**Gradle**
-
-```bash
-cd backend
-./gradlew clean test
-# If Spring Boot
+# On macOS/Linux
 ./gradlew bootRun
-# Otherwise (plain Java app with application entrypoint)
-./gradlew run
-```
+Build and run using Maven:
 
-**Maven**
+Bash
 
-```bash
-cd backend
-mvn -B -ntp clean test
-# If Spring Boot
 mvn spring-boot:run
-```
+The application will start on http://localhost:8080 (or as configured).
 
-**Run packaged jar (both tools)**
+🔐 Security Configuration
+This project features a hybrid security model to protect both the user-facing web pages and the public API.
 
-```bash
-# After building, an executable jar should be in build/libs or target
-java -jar build/libs/app.jar   # Gradle
-java -jar target/app.jar       # Maven
-```
+API Chain (/api/**):
 
-### Frontend (optional)
+Stateless: No sessions are created (SessionCreationPolicy.STATELESS).
 
-If/when you add a frontend:
+JWT: Authenticated using the JwtAuthenticationFilter.
 
-```bash
-cd frontend
-npm ci
-npm run dev
-```
+CSRF: Disabled.
 
-### Docker (optional)
+CORS: Enabled.
 
-```bash
-docker compose up --build
-```
+Web Chain (/**):
 
----
+Stateful: Uses standard sessions (SessionCreationPolicy.IF_REQUIRED).
 
-## Configuration
+Form Login: Redirects to /login for authentication.
 
-Create an `.env` file in each service directory (e.g., `backend/.env`). Example:
-
-```env
-PORT=8080
-LOG_LEVEL=info
-OPENAI_API_KEY=your_key_here
-```
-
-> Never commit real secrets. Keep `.env*` ignored (see `.gitignore`).
-
----
-
-## Project Structure
-
-Recommended layout (current + suggested):
-
-```
-MindChatBot2/
-├─ backend/                     # Java backend
-│  ├─ src/
-│  │  ├─ main/java/...          # Application sources
-│  │  ├─ main/resources/        # app config (application.yml, etc.)
-│  │  └─ test/java/...          # Unit tests
-│  ├─ build.gradle(.kts) or pom.xml
-│  └─ .env                      # local env vars (ignored)
-├─ docs/
-│  └─ images/                   # README images (e.g., Screenshot.jpeg)
-├─ .github/workflows/           # CI workflows
-├─ .gitignore
-├─ .gitattributes
-├─ LICENSE
-└─ README.md
-```
-
----
----
+CSRF: Enabled with a CookieCsrfTokenRepository (accessible to JavaScript) to protect against cross-site request forgery.
