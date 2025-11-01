@@ -45,9 +45,11 @@ MindChatBot offers a simple way to **express your emotions**, **reflect on your 
   👉 **[https://mindchatbot-service-829582230843.asia-northeast3.run.app/login](https://mindchatbot-service-829582230843.asia-northeast3.run.app/login)**
 
 ---
-# 🎬 Demo
+## 🎬 Demo
 
-![MindChatBot Demo](./demo.gif)
+<p align="center">
+  <img src="./demo.gif" alt="MindChatBot Demo" width="700"/>
+</p>
 
 ## 🧩 Tech Stack
 
