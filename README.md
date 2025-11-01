@@ -46,11 +46,7 @@ MindChatBot offers a simple way to **express your emotions**, **reflect on your 
 
 ---
 ## 🎬 Demo
-
-<p align="center">
-  <img src="./demo.gif" alt="MindChatBot Demo" width="700"/>
-</p>
-
+[🎬 Watch the demo (MP4)](./demo.mp4)
 ## 🧩 Tech Stack
 
 | Layer | Technology |
