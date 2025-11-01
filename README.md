@@ -43,7 +43,9 @@ MindChatBot offers a simple way to **express your emotions**, **reflect on your 
 - Deployed using **Docker containers** built for the `linux/amd64` platform.
 - Real-time deployed address:  
   👉 **[https://mindchatbot-service-829582230843.asia-northeast3.run.app/login](https://mindchatbot-service-829582230843.asia-northeast3.run.app/login)**
-
+---
+## 🎬 Demo
+https://github.com/Tsyren03/MindChatBot2/issues/1#issue-3577293240
 
 ---
 ## 🧩 Tech Stack
