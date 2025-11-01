@@ -44,13 +44,6 @@ MindChatBot offers a simple way to **express your emotions**, **reflect on your 
 - Real-time deployed address:  
   👉 **[https://mindchatbot-service-829582230843.asia-northeast3.run.app/login](https://mindchatbot-service-829582230843.asia-northeast3.run.app/login)**
 
----
-## 🎬 Demo
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=abc123xyz">
-    <img src="./demo.gif" alt="MindChatBot Demo" width="700"/>
-  </a>
-</p>
 
 ---
 ## 🧩 Tech Stack
