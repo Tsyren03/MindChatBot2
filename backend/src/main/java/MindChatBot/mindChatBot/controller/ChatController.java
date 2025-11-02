@@ -1,6 +1,7 @@
 package MindChatBot.mindChatBot.controller;
 
 import MindChatBot.mindChatBot.model.ChatLog;
+import MindChatBot.mindChatBot.model.User; // <-- Import User model
 import MindChatBot.mindChatBot.service.OpenAiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,14 @@ public class ChatController {
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage) {
 
-        String userId = resolveUserId(body);
+        // --- USER ID IS NOW FETCHED SECURELY ---
+        String userId;
+        try {
+            userId = getCurrentUserId();
+        } catch (IllegalStateException e) {
+            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not authenticated.")));
+        }
+
         String message = Objects.toString(body.getOrDefault("message", ""), "").trim();
 
         if (!StringUtils.hasText(message)) {
@@ -40,6 +48,7 @@ public class ChatController {
         }
 
         // --- ENFORCE THE DAILY LIMIT HERE ---
+        // Pass Collections.emptyList() because history is now loaded inside the service
         return openAiService.sendMessageToOpenAI(Collections.emptyList(), message, userId,
                         normalizeLang(asStringOrNull(body.get("lang")), acceptLanguage, LocaleContextHolder.getLocale()))
                 .flatMap(response -> {
@@ -63,6 +72,20 @@ public class ChatController {
 
     @GetMapping("/history/{userId}")
     public Mono<ResponseEntity<List<ChatLog>>> getChatHistory(@PathVariable String userId) {
+        // --- SECURELY CHECK USER ID ---
+        String authenticatedUserId;
+        try {
+            authenticatedUserId = getCurrentUserId();
+        } catch (IllegalStateException e) {
+            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+        }
+
+        // Prevent one user from seeing another's history
+        if (!Objects.equals(userId, authenticatedUserId)) {
+            log.warn("Security check: User '{}' tried to access history for user '{}'.", authenticatedUserId, userId);
+            return Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN).build());
+        }
+
         return openAiService.getChatHistory(userId)
                 .collectList()
                 .map(ResponseEntity::ok)
@@ -84,15 +107,24 @@ public class ChatController {
         return "en";
     }
 
-    private String resolveUserId(Map<String, Object> body) {
+    // --- SECURE HELPER TO GET LOGGED-IN USER ---
+    private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            Object p = auth.getPrincipal();
-            // Assumes you have a custom User model, adjust if necessary
-            if (p instanceof MindChatBot.mindChatBot.model.User u) return u.getId();
-            if (p instanceof org.springframework.security.core.userdetails.User u) return u.getUsername();
-            return String.valueOf(p);
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new IllegalStateException("No authentication in context");
         }
-        return Objects.toString(body.getOrDefault("userId", "guest"), "guest");
+        Object p = auth.getPrincipal();
+
+        // This handles both cases: when the principal is your custom User object
+        // or when it's the default Spring UserDetails object.
+        if (p instanceof MindChatBot.mindChatBot.model.User u) {
+            return u.getId();
+        }
+        if (p instanceof org.springframework.security.core.userdetails.User u) {
+            return u.getUsername(); // Your UserDetailService uses email as the username
+        }
+
+        // Fallback for when the principal is just the username string
+        return String.valueOf(p);
     }
 }

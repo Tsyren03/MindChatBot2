@@ -5,9 +5,11 @@ import MindChatBot.mindChatBot.dto.AddUserRequest;
 import MindChatBot.mindChatBot.model.User;
 import MindChatBot.mindChatBot.repository.UserRepository;
 import MindChatBot.mindChatBot.service.EmailService;
+import MindChatBot.mindChatBot.service.UserDetailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
@@ -31,6 +33,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final UserDetailService userDetailService;
     private final long CODE_EXPIRATION_MINUTES = 10; // Set expiration time
 
     private String generateCode() {
@@ -203,4 +206,39 @@ public class UserController {
 
     /* ---------- Profile APIs (No changes needed here) ---------- */
     // ... your existing getProfile and uploadProfileImage methods ...
+
+
+    //
+    // --- THIS IS THE CORRECTED METHOD THAT FIXES THE 500 ERROR ---
+    //
+    /**
+     * Safely gets the profile of the currently authenticated user.
+     * This method is called by the frontend to get the user's ID.
+     */
+    @GetMapping("/user/profile")
+    @ResponseBody
+    public ResponseEntity<User> getUserProfile(Authentication authentication) {
+
+        // 1. Check if authentication exists and is valid
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            // No user is logged in
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // 2. Get the username (which is the email in your setup) from the authenticated principal.
+        //    auth.getName() is the safest way to get this.
+        String username = authentication.getName();
+
+        // 3. Now, use the UserRepository (which is already injected) to find the full User object.
+        Optional<User> userOpt = userRepository.findByEmail(username);
+
+        // 4. Return the user if found
+        if (userOpt.isPresent()) {
+            return ResponseEntity.ok(userOpt.get());
+        } else {
+            // This should not happen if they are authenticated, but it's a good safeguard.
+            log.warn("Authenticated user '{}' not found in repository.", username);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
 }

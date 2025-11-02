@@ -41,14 +41,17 @@ public class WebSecurityConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
-        http.securityMatcher("/api/**")
+        // --- THIS IS THE FIX ---
+        // This chain is stateless and only handles API authentication (JWTs)
+        // It should ONLY match the auth endpoints.
+        http.securityMatcher("/api/auth/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(apiAuthEntryPoint))
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/chat", "/api/chat/history/**", "/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -63,24 +66,30 @@ public class WebSecurityConfig {
         CookieCsrfTokenRepository csrfRepo = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfRepo.setHeaderName("X-CSRF-TOKEN");
 
+        // This is now the main chain. It matches ALL other requests.
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepo)
                         .csrfTokenRequestHandler(requestHandler)
                         .ignoringRequestMatchers(
                                 new AntPathRequestMatcher("/user/moods/**"),
-                                new AntPathRequestMatcher("/user/notes/**")
+                                new AntPathRequestMatcher("/user/notes/**"),
+                                // This request is now handled by this filter chain,
+                                // so we must disable CSRF for it.
+                                new AntPathRequestMatcher("/api/chat/**")
                         )
                 )
+                // This chain is stateful (uses session cookies)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        // --- UPDATE THIS LINE ---
                         .requestMatchers("/login", "/signup", "/verify", "/resend-code", "/error", "/favicon.ico", "/forgot-password", "/reset-password").permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         .requestMatchers("/icons/**", "/uploads/**", "/site.webmanifest", "/manifest.webmanifest").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/user/**").hasAnyRole("USER","ADMIN")
+
+                        // This rule now correctly handles the chat API
+                        .requestMatchers("/api/chat/**").authenticated()
+                        .requestMatchers("/user/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -95,9 +104,8 @@ public class WebSecurityConfig {
                         .deleteCookies("JSESSIONID")
                         .invalidateHttpSession(true)
                         .permitAll()
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                );
 
         return http.build();
     }
-}
+} 

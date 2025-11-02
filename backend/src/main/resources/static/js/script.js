@@ -90,8 +90,7 @@ const LANG = pageLang();
 
 /* ===== Identity & chat storage ===== */
 const CHAT_NS = "chatMessages_v4_";
-let IDENTITY = { key: `guest:${getDeviceId()}`, email: null, uid: null, token: null };
-
+let IDENTITY = { key: 'initial', email: null, uid: null, token: null };
 function getDeviceId() {
   let id = localStorage.getItem("deviceId");
   if (!id) {
@@ -122,8 +121,16 @@ async function refreshIdentityFromProfile() {
     });
     if (r.ok) {
       const p = await r.json();
-      const uniq = (p.id || p.email || p.username || "").toString().toLowerCase().trim();
-      if (uniq) { setIdentity(`user:${uniq}`, p.email ?? null, p.id ?? null, localStorage.getItem("authToken") || null); return true; }
+
+      // --- THIS IS THE FIX ---
+      // We must consistently use EMAIL as the unique ID for chat logs.
+      const email = (p.email || "").toString().toLowerCase().trim();
+
+      if (email) {
+        // Set IDENTITY.uid to the email, not p.id
+        setIdentity(`user:${email}`, p.email ?? null, p.email ?? null, localStorage.getItem("authToken") || null);
+        return true;
+      }
     }
   } catch {}
   return false;
@@ -140,7 +147,6 @@ function refreshIdentityFromToken() {
 async function initIdentity() {
   if (await refreshIdentityFromProfile()) return;
   if (refreshIdentityFromToken()) return;
-  setIdentity(`guest:${getDeviceId()}`, null, null, localStorage.getItem("authToken") || null);
 }
 function storageKey() { return CHAT_NS + IDENTITY.key; }
 function getUserIdFromToken() { return { userId: IDENTITY.key, token: IDENTITY.token }; }
@@ -865,54 +871,100 @@ async function typewriter(targetEl, text, { min=16, max=28, onTick } = {}){
     await sleep(Math.random()*(max-min)+min);
   }
   scrollToBottom({ force:true });
-}
+}function renderMessage(sender, text) {
+   const messagesDiv = getMessagesEl();
+   if (!messagesDiv) return null;
 
-/* ===== Chat persistence ===== */
-async function addBotMessageTyping(text){
-  const typing = createTypingIndicator();
-  const think = Math.min(900, 200 + Math.floor(text.length * 4));
-  await sleep(think);
+   const messageElement = document.createElement("div");
+   messageElement.classList.add("message", sender);
+   messageElement.textContent = text;
+   messagesDiv.appendChild(messageElement);
+   return messageElement;
+ }
 
-  const msg = document.createElement("div");
-  msg.className = "message bot";
-  typing.el?.replaceWith(msg);
-  await typewriter(msg, text, { onTick: () => scrollToBottom() });
+ async function addBotMessageTyping(text){
+   const typing = createTypingIndicator();
+   const think = Math.min(900, 200 + Math.floor(text.length * 4));
+   await sleep(think);
 
-  const key = storageKey();
-  const messages = JSON.parse(localStorage.getItem(key) || "[]");
-  messages.push({ sender:"bot", text, t: Date.now() });
-  localStorage.setItem(key, JSON.stringify(messages.slice(-10)));
-}
-function addMessage(sender, text) {
-  const messagesDiv = getMessagesEl();
-  if (!messagesDiv) return;
+   // Use the new helper to create the element
+   const msg = renderMessage("bot", ""); // Start with empty text
+   if (!msg) { // Guard if messagesDiv wasn't found
+       typing.el?.remove();
+       return;
+   }
 
-  const messageElement = document.createElement("div");
-  messageElement.classList.add("message", sender);
-  messageElement.textContent = text;
-  messagesDiv.appendChild(messageElement);
-  scrollToBottom({ force:true });
+   typing.el?.replaceWith(msg);
+   await typewriter(msg, text, { onTick: () => scrollToBottom() });
 
-  const key = storageKey();
-  const messages = JSON.parse(localStorage.getItem(key) || "[]");
-  messages.push({ sender, text, t: Date.now() });
-  localStorage.setItem(key, JSON.stringify(messages.slice(-10)));
-}
-function loadLastChatMessages(forceClear = false) {
-  const messagesDiv = getMessagesEl();
-  if (!messagesDiv) return;
-  if (forceClear) messagesDiv.innerHTML = '';
+   // DO NOT save to localStorage here. The server already saved it.
+ }
 
-  const key = storageKey();
-  const messages = JSON.parse(localStorage.getItem(key) || "[]").slice(-10);
-  messages.forEach(msg => {
-    const el = document.createElement("div");
-    el.classList.add("message", msg.sender);
-    el.textContent = msg.text;
-    messagesDiv.appendChild(el);
-  });
-  requestAnimationFrame(() => scrollToBottom({ force:true }));
-}
+ function addMessage(sender, text) {
+   // Use the new helper to render
+   renderMessage(sender, text);
+   scrollToBottom({ force:true });
+
+   // DO NOT save to localStorage here. The server will save it.
+ }
+
+ async function loadLastChatMessages(forceClear = false) {
+   const messagesDiv = getMessagesEl();
+   if (!messagesDiv) return;
+
+   if (forceClear) {
+       messagesDiv.innerHTML = '';
+   }
+
+   // Get the current user's ID and token from our identity object
+   const { uid, token } = IDENTITY;
+
+   // Don't fetch history if we don't have a specific user ID (e.g., guest)
+if (!uid || IDENTITY.key === 'initial') {
+     return;
+   }
+
+   try {
+     // Call the backend endpoint with the user's ID
+     const res = await fetch(`/api/chat/history/${uid}`, {
+       method: "GET",
+       headers: {
+         "Accept": "application/json",
+         ...(token && { "Authorization": `Bearer ${token}` })
+       },
+       credentials: "same-origin",
+       cache: "no-store", // Always get fresh history
+     });
+
+     if (!res.ok) {
+       console.error("Failed to fetch chat history:", res.status, await res.text());
+       return;
+     }
+
+     const history = await res.json(); // This is the List<ChatLog> from the server
+
+     if (Array.isArray(history) && history.length > 0) {
+
+       // Get only the last 5 messages from the full history
+       const last5 = history.slice(-5);
+
+       last5.forEach(msg => {
+         // Render user message and bot response
+         if (msg.message) {
+           renderMessage("user", msg.message);
+         }
+         if (msg.response) {
+           renderMessage("bot", msg.response);
+         }
+       });
+     }
+
+     scrollToBottom({ force: true }); // Scroll to bottom after loading
+
+   } catch (e) {
+     console.error("Error loading chat history:", e);
+   }
+ }
 
 /* ===== Keep scroller stuck to bottom when new nodes appear ===== */
 function ensureAutoStickAtBottom(){
@@ -1033,7 +1085,7 @@ async function sendMessage() {
         "Accept-Language": LANG,
         ...(token && { "Authorization": `Bearer ${token}` })
       },
-      body: JSON.stringify({ message, userId, lang: LANG }),
+      body: JSON.stringify({ message, lang: LANG }),
       credentials: "same-origin"
     });
     const data = await response.json().catch(()=> ({}));
