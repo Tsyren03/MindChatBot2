@@ -41,8 +41,7 @@ MindChatBot offers a simple way to **express your emotions**, **reflect on your 
 ### ☁️ Hosting & Integration
 - Hosted on **Google Cloud Platform (GCP Free Tier)**.
 - Deployed using **Docker containers** built for the `linux/amd64` platform.
-- Real-time deployed address:  
-  👉 **[https://mindchatbot-service-829582230843.asia-northeast3.run.app/login](https://mindchatbot-service-829582230843.asia-northeast3.run.app/login)**
+
 ---
 ## 🎬 Demo
 [https://github.com/Tsyren03/MindChatBot2/issues/1#issue-3577293240](https://private-user-images.githubusercontent.com/132072743/508523047-4112b23c-84ea-4a15-9afe-aae8b003eba7.mp4?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjE5NzU4OTIsIm5iZiI6MTc2MTk3NTU5MiwicGF0aCI6Ii8xMzIwNzI3NDMvNTA4NTIzMDQ3LTQxMTJiMjNjLTg0ZWEtNGExNS05YWZlLWFhZThiMDAzZWJhNy5tcDQ_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMTAxJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTEwMVQwNTM5NTJaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT05ZmU2YTMwYTMzNmIwNWQzOWI2MGEyMGU3N2RmNWU1OGIyYWJjNzk3MWU3Y2NlZTA5ZDNhNzVkOTc5YjAwOWQ3JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.qZ9ZOx0degMDAmxIRYGopOz1OLS63aioBHPs7dsUXCk)
